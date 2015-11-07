@@ -11,7 +11,11 @@ import com.google.android.gms.drive.DriveApi;
 import com.google.android.gms.drive.DriveFile;
 import com.google.android.gms.drive.DriveId;
 
+import rkr.drive.notepad.database.FilesHelper;
+
 public class TextEditor extends BaseDriveActivity {
+
+    private DriveId mCurrentDriveId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -19,7 +23,7 @@ public class TextEditor extends BaseDriveActivity {
         setContentView(R.layout.activity_text_editor);
 
         Intent intent = getIntent();
-        DriveId mCurrentDriveId = intent.getParcelableExtra(INTENT_DRIVE_ID);
+        mCurrentDriveId = intent.getParcelableExtra(INTENT_DRIVE_ID);
         DriveFile file = mCurrentDriveId.asDriveFile();
         //final PendingResult<DriveResource.MetadataResult> metadataResult = file.getMetadata(mGoogleApiClient);
         final PendingResult<DriveApi.DriveContentsResult> contentsResult = file.open(mGoogleApiClient, DriveFile.MODE_READ_ONLY, null);
@@ -38,6 +42,9 @@ public class TextEditor extends BaseDriveActivity {
                     String contents = Utils.readFromInputStream(result.getDriveContents().getInputStream());
                     EditText textField = (EditText) findViewById(R.id.editText);
                     textField.setText(contents);
+
+                    FilesHelper filesHelper = new FilesHelper(getApplicationContext());
+                    filesHelper.AddItem(mCurrentDriveId, contents);
                 }
             };
 }
