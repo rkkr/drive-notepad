@@ -1,4 +1,5 @@
 /**
+ * Copyright 2015 Raimondas Rimkus
  * Copyright 2013 Google Inc. All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -18,9 +19,6 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-/**
- * Provides utility functions.
- */
 public class Utils {
     public static String readFromInputStream(InputStream is)  {
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
