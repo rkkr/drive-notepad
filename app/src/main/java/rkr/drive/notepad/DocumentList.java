@@ -70,26 +70,7 @@ public class DocumentList extends BaseDriveActivity {
         Intent intent = new Intent(this, TextEditor.class);
         intent.putExtra(INTENT_DRIVE_ID, mCurrentDriveId);
         startActivity(intent);
-
-
-        /*DriveFile file = mCurrentDriveId.asDriveFile();
-
-        //final PendingResult<DriveResource.MetadataResult> metadataResult = file.getMetadata(mGoogleApiClient);
-        final PendingResult<DriveApi.DriveContentsResult> contentsResult = file.open(mGoogleApiClient, DriveFile.MODE_READ_ONLY, null);
-
-        contentsResult.setResultCallback(onContentsCallback);*/
     }
-
-    /*ResultCallback<DriveApi.DriveContentsResult> onContentsCallback =
-            new ResultCallback<DriveApi.DriveContentsResult>() {
-                @Override
-                public void onResult(DriveApi.DriveContentsResult result) {
-                    Log.d("DocumentList", "In file open");
-                    String contents = Utils.readFromInputStream(result.getDriveContents().getInputStream());
-                    TextView backGroundText = (TextView) findViewById(R.id.text_background);
-                    backGroundText.setText(contents);
-                }
-            };*/
 
     @Override
     public void onConnected(Bundle connectionHint) {

@@ -9,10 +9,11 @@
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:showIn="@layout/activity_document_list" tools:context=".DocumentList">
 
-    <TextView
-        android:text="Hello World!"
-        android:layout_width="wrap_content"
+    <ListView
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/text_background"
-        />
+        android:id="@+id/listView"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
 </RelativeLayout>
