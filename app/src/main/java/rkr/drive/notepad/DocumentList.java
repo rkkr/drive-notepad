@@ -1,16 +1,23 @@
 package rkr.drive.notepad;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,6 +29,12 @@ import com.google.android.gms.drive.DriveApi;
 import com.google.android.gms.drive.DriveFile;
 import com.google.android.gms.drive.DriveId;
 import com.google.android.gms.drive.OpenFileActivityBuilder;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import rkr.drive.notepad.database.File;
+import rkr.drive.notepad.database.FileHelper;
 
 
 public class DocumentList extends BaseDriveActivity {
@@ -47,6 +60,15 @@ public class DocumentList extends BaseDriveActivity {
                 }
             }
         });
+
+        /*Handler h = new Handler();
+        h.post(new Runnable() {
+            @Override
+            public void run() {
+                LoadHistory();
+            }
+        });*/
+        LoadHistory();
     }
 
     @Override
@@ -70,6 +92,20 @@ public class DocumentList extends BaseDriveActivity {
         Intent intent = new Intent(this, TextEditor.class);
         intent.putExtra(INTENT_DRIVE_ID, mCurrentDriveId);
         startActivity(intent);
+    }
+
+    private void LoadHistory()
+    {
+        FileHelper fileHelper = new FileHelper(this);
+        List<File> files = fileHelper.LoadItems();
+        ListView fileList = (ListView) findViewById(R.id.file_history);
+
+        /*ArrayAdapter<File> arrayAdapter = new ArrayAdapter<File>(
+                this,
+                R.layout.content_document_list_row,
+                files);*/
+
+        fileList.setAdapter(new listAdapter(this, files));
     }
 
     @Override
@@ -114,5 +150,50 @@ public class DocumentList extends BaseDriveActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+}
+
+class listAdapter extends BaseAdapter {
+
+    Context context;
+    List<File> files;
+    private static LayoutInflater inflater = null;
+
+    public listAdapter(Context context, List<File> files) {
+        // TODO Auto-generated constructor stub
+        this.context = context;
+        this.files = files;
+        inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+    }
+
+    @Override
+    public int getCount() {
+        // TODO Auto-generated method stub
+        return this.files.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        // TODO Auto-generated method stub
+        return this.files.get(position);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        // TODO Auto-generated method stub
+        return position;
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        // TODO Auto-generated method stub
+        View vi = convertView;
+        if (vi == null)
+            vi = inflater.inflate(R.layout.content_document_list_row, null);
+        TextView fileName = (TextView) vi.findViewById(R.id.text_file_name);
+        fileName.setText(this.files.get(position).fileName);
+        TextView lastUsed = (TextView) vi.findViewById(R.id.text_file_last_used);
+        lastUsed.setText("Last used: " + this.files.get(position).lastUsed.toString());
+        return vi;
     }
 }

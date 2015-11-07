@@ -36,6 +36,7 @@ public abstract class BaseDriveActivity extends Activity implements
         GoogleApiClient.OnConnectionFailedListener {
 
     protected static final int REQUEST_CODE_OPEN = 3;
+    protected static final int REQUEST_CODE_LOAD_HISTORY = 4;
     protected static final String INTENT_DRIVE_ID = "DRIVE_ID";
 
     private static final String TAG = "BaseDriveActivity";
