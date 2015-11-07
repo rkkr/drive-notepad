@@ -35,6 +35,9 @@ public abstract class BaseDriveActivity extends Activity implements
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener {
 
+    protected static final int REQUEST_CODE_OPEN = 3;
+    protected static final String INTENT_DRIVE_ID = "DRIVE_ID";
+
     private static final String TAG = "BaseDriveActivity";
 
     /**
@@ -55,7 +58,7 @@ public abstract class BaseDriveActivity extends Activity implements
     /**
      * Google API client.
      */
-    protected GoogleApiClient mGoogleApiClient;
+    protected static GoogleApiClient mGoogleApiClient;
 
     /**
      * Selected account name to authorize the app for and authenticate the

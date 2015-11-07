@@ -26,9 +26,6 @@ import com.google.android.gms.drive.OpenFileActivityBuilder;
 
 public class DocumentList extends BaseDriveActivity {
 
-    private DriveId mCurrentDriveId;
-    protected static final int REQUEST_CODE_OPENER = 1;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,11 +38,10 @@ public class DocumentList extends BaseDriveActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                IntentSender intent = Drive.DriveApi
-                        .newOpenFileActivityBuilder()
-                        .build(mGoogleApiClient);
+                IntentSender intent = Drive.DriveApi.newOpenFileActivityBuilder().build(mGoogleApiClient);
+
                 try {
-                    startIntentSenderForResult(intent, REQUEST_CODE_OPENER, null, 0, 0, 0);
+                    startIntentSenderForResult(intent, REQUEST_CODE_OPEN, null, 0, 0, 0);
                 } catch (IntentSender.SendIntentException e) {
                     Log.w("DocumentList", "Unable to send intent", e);
                 }
@@ -56,11 +52,11 @@ public class DocumentList extends BaseDriveActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
-            case REQUEST_CODE_OPENER:
+            case REQUEST_CODE_OPEN:
                 if (resultCode == RESULT_OK) {
                     Log.d("DocumentList", "In Open activity result");
-                    mCurrentDriveId = data.getParcelableExtra(OpenFileActivityBuilder.EXTRA_RESPONSE_DRIVE_ID);
-                    get();
+                    DriveId mCurrentDriveId = data.getParcelableExtra(OpenFileActivityBuilder.EXTRA_RESPONSE_DRIVE_ID);
+                    OpenFile(mCurrentDriveId);
                 }
                 break;
             default:
@@ -68,17 +64,23 @@ public class DocumentList extends BaseDriveActivity {
         }
     }
 
-    private void get() {
+    private void OpenFile(DriveId mCurrentDriveId) {
         Log.d("DocumentList", "Retrieving...");
-        DriveFile file = mCurrentDriveId.asDriveFile();
+
+        Intent intent = new Intent(this, TextEditor.class);
+        intent.putExtra(INTENT_DRIVE_ID, mCurrentDriveId);
+        startActivity(intent);
+
+
+        /*DriveFile file = mCurrentDriveId.asDriveFile();
 
         //final PendingResult<DriveResource.MetadataResult> metadataResult = file.getMetadata(mGoogleApiClient);
         final PendingResult<DriveApi.DriveContentsResult> contentsResult = file.open(mGoogleApiClient, DriveFile.MODE_READ_ONLY, null);
 
-        contentsResult.setResultCallback(onContentsCallback);
+        contentsResult.setResultCallback(onContentsCallback);*/
     }
 
-    ResultCallback<DriveApi.DriveContentsResult> onContentsCallback =
+    /*ResultCallback<DriveApi.DriveContentsResult> onContentsCallback =
             new ResultCallback<DriveApi.DriveContentsResult>() {
                 @Override
                 public void onResult(DriveApi.DriveContentsResult result) {
@@ -87,7 +89,7 @@ public class DocumentList extends BaseDriveActivity {
                     TextView backGroundText = (TextView) findViewById(R.id.text_background);
                     backGroundText.setText(contents);
                 }
-            };
+            };*/
 
     @Override
     public void onConnected(Bundle connectionHint) {
