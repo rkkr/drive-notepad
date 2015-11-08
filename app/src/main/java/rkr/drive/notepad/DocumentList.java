@@ -78,20 +78,12 @@ public class DocumentList extends BaseDriveActivity {
                 if (resultCode == RESULT_OK) {
                     Log.d("DocumentList", "In Open activity result");
                     DriveId mCurrentDriveId = data.getParcelableExtra(OpenFileActivityBuilder.EXTRA_RESPONSE_DRIVE_ID);
-                    OpenFile(mCurrentDriveId);
+                    TextEditor.OpenFile(this, mCurrentDriveId);
                 }
                 break;
             default:
                 super.onActivityResult(requestCode, resultCode, data);
         }
-    }
-
-    private void OpenFile(DriveId mCurrentDriveId) {
-        Log.d("DocumentList", "Retrieving...");
-
-        Intent intent = new Intent(this, TextEditor.class);
-        intent.putExtra(INTENT_DRIVE_ID, mCurrentDriveId);
-        startActivity(intent);
     }
 
     private void LoadHistory()
@@ -185,15 +177,23 @@ class listAdapter extends BaseAdapter {
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, View convertView, ViewGroup parent) {
         // TODO Auto-generated method stub
         View vi = convertView;
         if (vi == null)
             vi = inflater.inflate(R.layout.content_document_list_row, null);
         TextView fileName = (TextView) vi.findViewById(R.id.text_file_name);
-        fileName.setText(this.files.get(position).fileName);
+        fileName.setText(files.get(position).fileName);
         TextView lastUsed = (TextView) vi.findViewById(R.id.text_file_last_used);
-        lastUsed.setText("Last used: " + this.files.get(position).lastUsed.toString());
+        lastUsed.setText("Last used: " + files.get(position).lastUsed.toString());
+
+        vi.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                TextEditor.OpenFile(context, files.get(position).driveId);
+            }
+        });
+
         return vi;
     }
 }

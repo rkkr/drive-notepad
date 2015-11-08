@@ -16,13 +16,20 @@ public class FileHelper {
 
     private DBHelper dbHelper;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final String[] fileColumns = {
+            DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID,
+            DBContracts.FileEntry.COLUMN_NAME_CONTENTS,
+            DBContracts.FileEntry.COLUMN_NAME_LASTUSED,
+            DBContracts.FileEntry.COLUMN_NAME_FILENAME,
+            DBContracts.FileEntry.COLUMN_NAME_FILESIZE,
+    };
 
     public FileHelper(Context context)
     {
         dbHelper = new DBHelper(context);
     }
 
-    public void AddItem(File file)
+    public boolean AddItem(File file)
     {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
@@ -34,25 +41,56 @@ public class FileHelper {
         values.put(DBContracts.FileEntry.COLUMN_NAME_FILESIZE, file.fileSize);
 
         long newRowId = db.insert(DBContracts.FileEntry.TABLE_NAME, null, values);
+        return newRowId > -1;
+    }
+
+    public boolean ItemExists(File file)
+    {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        Cursor cursor = db.query(
+                DBContracts.FileEntry.TABLE_NAME,
+                fileColumns,
+                DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID + " = ?",
+                new String[]{file.driveId.encodeToString()},
+                null,
+                null,
+                null
+        );
+
+        return cursor.getCount() > 0;
+    }
+
+    public boolean UpdateItem(File file)
+    {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID, file.driveId.encodeToString());
+        values.put(DBContracts.FileEntry.COLUMN_NAME_CONTENTS, file.contents);
+        values.put(DBContracts.FileEntry.COLUMN_NAME_LASTUSED, dateFormat.format(file.lastUsed));
+        values.put(DBContracts.FileEntry.COLUMN_NAME_FILENAME, file.fileName);
+        values.put(DBContracts.FileEntry.COLUMN_NAME_FILESIZE, file.fileSize);
+
+        int rowsUpdated = db.update(
+                DBContracts.FileEntry.TABLE_NAME,
+                values,
+                DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID + " = ?",
+                new String[]{file.driveId.encodeToString()}
+        );
+
+        return rowsUpdated == 1;
     }
 
     public ArrayList<File> LoadItems()
     {
-        String[] fileInfo = {
-                DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID,
-                DBContracts.FileEntry.COLUMN_NAME_CONTENTS,
-                DBContracts.FileEntry.COLUMN_NAME_LASTUSED,
-                DBContracts.FileEntry.COLUMN_NAME_FILENAME,
-                DBContracts.FileEntry.COLUMN_NAME_FILESIZE,
-        };
-
         String sortOrder = DBContracts.FileEntry.COLUMN_NAME_LASTUSED + " DESC";
 
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         Cursor cursor = db.query(
                 DBContracts.FileEntry.TABLE_NAME, // The table to query
-                fileInfo,                         // The columns to return
+                fileColumns,                         // The columns to return
                 null,                             // The columns for the WHERE clause
                 null,                             // The values for the WHERE clause
                 null,                             // don't group the rows

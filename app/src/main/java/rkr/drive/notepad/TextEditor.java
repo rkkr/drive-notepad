@@ -1,5 +1,8 @@
 package rkr.drive.notepad;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,6 +25,7 @@ public class TextEditor extends BaseDriveActivity {
     private DriveId driveId;
     private String fileContents;
     private String fileName;
+    private String fileMime;
     private long fileSize;
 
     @Override
@@ -31,11 +35,7 @@ public class TextEditor extends BaseDriveActivity {
 
         Intent intent = getIntent();
         driveId = intent.getParcelableExtra(INTENT_DRIVE_ID);
-        DriveFile file = driveId.asDriveFile();
-        final PendingResult<DriveResource.MetadataResult> metadataResult = file.getMetadata(mGoogleApiClient);
-        final PendingResult<DriveApi.DriveContentsResult> contentsResult = file.open(mGoogleApiClient, DriveFile.MODE_READ_ONLY, null);
-
-        contentsResult.setResultCallback(onContentsCallback);
+        PendingResult<DriveResource.MetadataResult> metadataResult = driveId.asDriveFile().getMetadata(mGoogleApiClient);
         metadataResult.setResultCallback(onMetadataCallback);
     }
 
@@ -49,7 +49,7 @@ public class TextEditor extends BaseDriveActivity {
                     EditText textField = (EditText) findViewById(R.id.editText);
                     textField.setText(fileContents);
 
-                    TryAddFileToHistory();
+                    AddFileToHistory();
                 }
             };
 
@@ -61,12 +61,54 @@ public class TextEditor extends BaseDriveActivity {
 
                     fileName = result.getMetadata().getOriginalFilename();
                     fileSize = result.getMetadata().getFileSize();
+                    fileMime = result.getMetadata().getMimeType();
 
-                    TryAddFileToHistory();
+                    if (IsFileSane())
+                    {
+                        PendingResult<DriveApi.DriveContentsResult> contentsResult = driveId.asDriveFile().open(mGoogleApiClient, DriveFile.MODE_READ_ONLY, null);
+                        contentsResult.setResultCallback(onContentsCallback);
+                    }
                 }
             };
 
-    private boolean TryAddFileToHistory()
+    private boolean IsFileSane()
+    {
+        Log.d("TextEditor", "Mime type: " + fileMime);
+        Log.d("TextEditor", "File size: " + Long.toString(fileSize));
+
+        String errors = "";
+        if (fileSize > 8 * 1024 * 1024)
+            errors += String.format("File size is: %d MB.\n", fileSize / 1024 / 1024);
+        if (fileMime != "text/plain" &&
+                !fileMime.contains("xml"))
+            errors += String.format("File format is: %s.\n", fileMime);
+
+        if (errors != "") {
+            new AlertDialog.Builder(this)
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .setTitle("Invalid file")
+                    .setMessage(errors + "Are you sure you want to open?")
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            PendingResult<DriveApi.DriveContentsResult> contentsResult = driveId.asDriveFile().open(mGoogleApiClient, DriveFile.MODE_READ_ONLY, null);
+                            contentsResult.setResultCallback(onContentsCallback);
+                        }
+                    })
+                    .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            finish();
+                        }
+                    })
+                    .show();
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean AddFileToHistory()
     {
         if (driveId == null || fileName == null || fileContents == null)
             return false;
@@ -79,7 +121,19 @@ public class TextEditor extends BaseDriveActivity {
         file.fileSize = fileSize;
         file.lastUsed = new Date();
 
-        filesHelper.AddItem(file);
+        if (filesHelper.ItemExists(file))
+            filesHelper.UpdateItem(file);
+        else
+            filesHelper.AddItem(file);
         return true;
     }
+
+    public static void OpenFile(Context context, DriveId mCurrentDriveId) {
+        Log.d("DocumentList", "Retrieving...");
+
+        Intent intent = new Intent(context, TextEditor.class);
+        intent.putExtra(INTENT_DRIVE_ID, mCurrentDriveId);
+        context.startActivity(intent);
+    }
+
 }
