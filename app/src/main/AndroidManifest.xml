@@ -20,7 +20,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".TextEditor" >
+        <activity
+            android:name=".TextEditor"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".DocumentList" />
         </activity>
         <activity
             android:name=".SettingsActivity"

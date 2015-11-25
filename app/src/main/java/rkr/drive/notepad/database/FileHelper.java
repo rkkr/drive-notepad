@@ -4,6 +4,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import com.google.android.gms.drive.DriveId;
 
@@ -16,14 +17,6 @@ public class FileHelper {
 
     private DBHelper dbHelper;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private static final String[] fileColumns = {
-            DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID,
-            DBContracts.FileEntry.COLUMN_NAME_CONTENTS,
-            DBContracts.FileEntry.COLUMN_NAME_LASTUSED,
-            DBContracts.FileEntry.COLUMN_NAME_FILENAME,
-            DBContracts.FileEntry.COLUMN_NAME_FILESIZE,
-    };
-
     public FileHelper(Context context)
     {
         dbHelper = new DBHelper(context);
@@ -41,6 +34,8 @@ public class FileHelper {
         values.put(DBContracts.FileEntry.COLUMN_NAME_FILESIZE, file.fileSize);
         values.put(DBContracts.FileEntry.COLUMN_NAME_STATE, file.state);
 
+        Log.d("Adding item to db", values.toString());
+
         long newRowId = db.insert(DBContracts.FileEntry.TABLE_NAME, null, values);
         return newRowId > -1;
     }
@@ -51,7 +46,7 @@ public class FileHelper {
 
         Cursor cursor = db.query(
                 DBContracts.FileEntry.TABLE_NAME,
-                fileColumns,
+                null,
                 DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID + " = ?",
                 new String[]{file.driveId.encodeToString()},
                 null,
@@ -59,8 +54,9 @@ public class FileHelper {
                 null
         );
 
+        boolean exists = cursor.getCount() > 0;
         cursor.close();
-        return cursor.getCount() > 0;
+        return exists;
     }
 
     public boolean UpdateItem(File file)
@@ -74,6 +70,8 @@ public class FileHelper {
         values.put(DBContracts.FileEntry.COLUMN_NAME_FILENAME, file.fileName);
         values.put(DBContracts.FileEntry.COLUMN_NAME_FILESIZE, file.fileSize);
         values.put(DBContracts.FileEntry.COLUMN_NAME_STATE, file.state);
+
+        Log.d("Updating item to db", values.toString());
 
         int rowsUpdated = db.update(
                 DBContracts.FileEntry.TABLE_NAME,
@@ -93,7 +91,7 @@ public class FileHelper {
 
         Cursor cursor = db.query(
                 DBContracts.FileEntry.TABLE_NAME, // The table to query
-                fileColumns,                         // The columns to return
+                null,                         // The columns to return
                 null,                             // The columns for the WHERE clause
                 null,                             // The values for the WHERE clause
                 null,                             // don't group the rows

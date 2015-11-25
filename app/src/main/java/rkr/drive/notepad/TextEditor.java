@@ -5,7 +5,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.NavUtils;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.EditText;
 
 import com.google.android.gms.common.api.PendingResult;
@@ -32,11 +36,31 @@ public class TextEditor extends BaseDriveActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_text_editor);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_textEditor);
+        setSupportActionBar(toolbar);
+        assert getSupportActionBar() != null;
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         Intent intent = getIntent();
         driveId = intent.getParcelableExtra(INTENT_DRIVE_ID);
         PendingResult<DriveResource.MetadataResult> metadataResult = driveId.asDriveFile().getMetadata(mGoogleApiClient);
         metadataResult.setResultCallback(onMetadataCallback);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_text_editor, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                NavUtils.navigateUpFromSameTask(this);
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     ResultCallback<DriveApi.DriveContentsResult> onContentsCallback =
@@ -62,6 +86,9 @@ public class TextEditor extends BaseDriveActivity {
                     fileName = result.getMetadata().getOriginalFilename();
                     fileSize = result.getMetadata().getFileSize();
                     fileMime = result.getMetadata().getMimeType();
+
+                    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_textEditor);
+                    toolbar.setTitle(fileName);
 
                     if (IsFileSane())
                     {
@@ -110,7 +137,7 @@ public class TextEditor extends BaseDriveActivity {
 
     private boolean AddFileToHistory()
     {
-        if (driveId == null || fileName == null || fileContents == null)
+        if (driveId == null || fileName == null)
             return false;
 
         FileHelper filesHelper = new FileHelper(getApplicationContext());
@@ -120,6 +147,7 @@ public class TextEditor extends BaseDriveActivity {
         file.fileName = fileName;
         file.fileSize = fileSize;
         file.lastUsed = new Date();
+        file.state = 1;
 
         if (filesHelper.ItemExists(file))
             filesHelper.UpdateItem(file);

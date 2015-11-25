@@ -97,11 +97,13 @@ public class DocumentList extends BaseDriveActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        LoadHistory();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+        //LoadHistory();
     }
 
     @Override
