@@ -9,4 +9,5 @@ public class File {
     public Date lastUsed;
     public String contents;
     public long fileSize;
+    public long state;
 }

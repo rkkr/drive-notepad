@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -22,15 +21,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.drive.Drive;
-import com.google.android.gms.drive.DriveApi;
-import com.google.android.gms.drive.DriveFile;
 import com.google.android.gms.drive.DriveId;
 import com.google.android.gms.drive.OpenFileActivityBuilder;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import rkr.drive.notepad.database.File;
@@ -44,7 +38,8 @@ public class DocumentList extends BaseDriveActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_document_list);
-        //Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -60,14 +55,6 @@ public class DocumentList extends BaseDriveActivity {
                 }
             }
         });
-
-        /*Handler h = new Handler();
-        h.post(new Runnable() {
-            @Override
-            public void run() {
-                LoadHistory();
-            }
-        });*/
         LoadHistory();
     }
 
@@ -91,11 +78,6 @@ public class DocumentList extends BaseDriveActivity {
         FileHelper fileHelper = new FileHelper(this);
         List<File> files = fileHelper.LoadItems();
         ListView fileList = (ListView) findViewById(R.id.file_history);
-
-        /*ArrayAdapter<File> arrayAdapter = new ArrayAdapter<File>(
-                this,
-                R.layout.content_document_list_row,
-                files);*/
 
         fileList.setAdapter(new listAdapter(this, files));
     }
@@ -124,23 +106,22 @@ public class DocumentList extends BaseDriveActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_document_list, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
+
             return true;
         }
-
+        if (id == R.id.action_open) {
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
 }

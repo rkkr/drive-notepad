@@ -17,6 +17,7 @@ public final class DBContracts {
         public static final String COLUMN_NAME_LASTUSED = "lastused";
         public static final String COLUMN_NAME_FILENAME = "filename";
         public static final String COLUMN_NAME_FILESIZE = "filesize";
+        public static final String COLUMN_NAME_STATE = "state";
 
         public static final String SQL_CREATE_ENTRIES =
                 "CREATE TABLE " + TABLE_NAME + " (" +
@@ -26,6 +27,7 @@ public final class DBContracts {
                         COMMA_SEP + COLUMN_NAME_LASTUSED + TEXT_TYPE +
                         COMMA_SEP + COLUMN_NAME_FILENAME + TEXT_TYPE +
                         COMMA_SEP + COLUMN_NAME_FILESIZE + LONG_TYPE +
+                        COMMA_SEP + COLUMN_NAME_STATE + LONG_TYPE +
                 " )";
 
         public static final String SQL_DELETE_ENTRIES =

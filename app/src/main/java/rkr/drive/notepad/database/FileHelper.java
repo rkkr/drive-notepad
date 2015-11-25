@@ -39,6 +39,7 @@ public class FileHelper {
         values.put(DBContracts.FileEntry.COLUMN_NAME_LASTUSED, dateFormat.format(file.lastUsed));
         values.put(DBContracts.FileEntry.COLUMN_NAME_FILENAME, file.fileName);
         values.put(DBContracts.FileEntry.COLUMN_NAME_FILESIZE, file.fileSize);
+        values.put(DBContracts.FileEntry.COLUMN_NAME_STATE, file.state);
 
         long newRowId = db.insert(DBContracts.FileEntry.TABLE_NAME, null, values);
         return newRowId > -1;
@@ -58,6 +59,7 @@ public class FileHelper {
                 null
         );
 
+        cursor.close();
         return cursor.getCount() > 0;
     }
 
@@ -71,6 +73,7 @@ public class FileHelper {
         values.put(DBContracts.FileEntry.COLUMN_NAME_LASTUSED, dateFormat.format(file.lastUsed));
         values.put(DBContracts.FileEntry.COLUMN_NAME_FILENAME, file.fileName);
         values.put(DBContracts.FileEntry.COLUMN_NAME_FILESIZE, file.fileSize);
+        values.put(DBContracts.FileEntry.COLUMN_NAME_STATE, file.state);
 
         int rowsUpdated = db.update(
                 DBContracts.FileEntry.TABLE_NAME,
@@ -107,6 +110,7 @@ public class FileHelper {
             file.fileName = cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_FILENAME));
             file.fileSize = cursor.getLong(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_FILESIZE));
             file.contents = cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_CONTENTS));
+            file.state = cursor.getLong(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_STATE));
             try {
                 file.lastUsed = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_LASTUSED)));
             } catch (ParseException e) {
@@ -115,7 +119,8 @@ public class FileHelper {
 
             files.add(file);
         }
-        return  files;
+        cursor.close();
+        return files;
     }
 }
 

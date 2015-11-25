@@ -79,11 +79,11 @@ public class TextEditor extends BaseDriveActivity {
         String errors = "";
         if (fileSize > 8 * 1024 * 1024)
             errors += String.format("File size is: %d MB.\n", fileSize / 1024 / 1024);
-        if (fileMime != "text/plain" &&
+        if (!fileMime.equals("text/plain") &&
                 !fileMime.contains("xml"))
             errors += String.format("File format is: %s.\n", fileMime);
 
-        if (errors != "") {
+        if (!errors.isEmpty()) {
             new AlertDialog.Builder(this)
                     .setIcon(android.R.drawable.ic_dialog_alert)
                     .setTitle("Invalid file")
