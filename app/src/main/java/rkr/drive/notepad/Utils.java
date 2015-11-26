@@ -16,8 +16,11 @@
 package rkr.drive.notepad;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 
 public class Utils {
     public static String readFromInputStream(InputStream is)  {
@@ -28,10 +31,23 @@ public class Utils {
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
             }
+            reader.close();
             return builder.toString();
         }
         catch (java.io.IOException e) {
             return null;
+        }
+    }
+
+    public static boolean writeToOutputStream(OutputStream out, String contents)  {
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
+        try {
+            writer.write(contents);
+            writer.close();
+            return true;
+        }
+        catch (java.io.IOException e) {
+            return false;
         }
     }
 }

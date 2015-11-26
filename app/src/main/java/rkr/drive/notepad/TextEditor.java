@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.support.v7.widget.Toolbar;
@@ -11,6 +12,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
@@ -18,6 +20,7 @@ import com.google.android.gms.drive.DriveApi;
 import com.google.android.gms.drive.DriveFile;
 import com.google.android.gms.drive.DriveId;
 import com.google.android.gms.drive.DriveResource;
+import com.google.android.gms.common.api.Status;
 
 import java.util.Date;
 
@@ -59,11 +62,14 @@ public class TextEditor extends BaseDriveActivity {
             case android.R.id.home:
                 NavUtils.navigateUpFromSameTask(this);
                 return true;
+            case R.id.action_save:
+                SaveFile();
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    ResultCallback<DriveApi.DriveContentsResult> onContentsCallback =
+    ResultCallback<DriveApi.DriveContentsResult> onOpenCallback =
             new ResultCallback<DriveApi.DriveContentsResult>() {
                 @Override
                 public void onResult(DriveApi.DriveContentsResult result) {
@@ -93,7 +99,7 @@ public class TextEditor extends BaseDriveActivity {
                     if (IsFileSane())
                     {
                         PendingResult<DriveApi.DriveContentsResult> contentsResult = driveId.asDriveFile().open(mGoogleApiClient, DriveFile.MODE_READ_ONLY, null);
-                        contentsResult.setResultCallback(onContentsCallback);
+                        contentsResult.setResultCallback(onOpenCallback);
                     }
                 }
             };
@@ -119,7 +125,7 @@ public class TextEditor extends BaseDriveActivity {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             PendingResult<DriveApi.DriveContentsResult> contentsResult = driveId.asDriveFile().open(mGoogleApiClient, DriveFile.MODE_READ_ONLY, null);
-                            contentsResult.setResultCallback(onContentsCallback);
+                            contentsResult.setResultCallback(onOpenCallback);
                         }
                     })
                     .setNegativeButton("No", new DialogInterface.OnClickListener() {
@@ -162,6 +168,38 @@ public class TextEditor extends BaseDriveActivity {
         Intent intent = new Intent(context, TextEditor.class);
         intent.putExtra(INTENT_DRIVE_ID, mCurrentDriveId);
         context.startActivity(intent);
+    }
+
+    ResultCallback<DriveApi.DriveContentsResult> onSaveCallback =
+            new ResultCallback<DriveApi.DriveContentsResult>() {
+                @Override
+                public void onResult(DriveApi.DriveContentsResult result) {
+                    Log.d("DocumentList", "In file save");
+                    if (!Utils.writeToOutputStream(result.getDriveContents().getOutputStream(), fileContents))
+                    {
+                        Toast.makeText(getApplicationContext(), "File not saved to Drive", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    result.getDriveContents().commit(mGoogleApiClient, null).setResultCallback(new ResultCallback<Status>() {
+                        @Override
+                        public void onResult(Status result) {
+                            Toast.makeText(getApplicationContext(), "File saved", Toast.LENGTH_LONG).show();
+                        }
+                    });
+
+                }
+            };
+
+    private void SaveFile()
+    {
+        EditText textField = (EditText) findViewById(R.id.editText);
+        fileContents = textField.getText().toString();
+        Log.d("DocumentList", "File contents: " + fileContents);
+        AddFileToHistory();
+
+        PendingResult<DriveApi.DriveContentsResult> contentsResult = driveId.asDriveFile().open(mGoogleApiClient, DriveFile.MODE_WRITE_ONLY, null);
+        contentsResult.setResultCallback(onSaveCallback);
     }
 
 }
