@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -13,6 +14,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -155,17 +157,14 @@ class listAdapter extends BaseAdapter {
     }
 
     @Override
-    public View getView(final int position, View convertView, ViewGroup parent) {
-        // TODO Auto-generated method stub
-        View vi = convertView;
-        if (vi == null)
-            vi = inflater.inflate(R.layout.content_document_list_row, null);
-        TextView fileName = (TextView) vi.findViewById(R.id.text_file_name);
+    public View getView(final int position, View view, ViewGroup parent) {
+        view = inflater.inflate(R.layout.content_document_list_row, null);
+        TextView fileName = (TextView) view.findViewById(R.id.list_row_document_name);
         fileName.setText(files.get(position).fileName);
-        TextView lastUsed = (TextView) vi.findViewById(R.id.text_file_last_used);
+        TextView lastUsed = (TextView) view.findViewById(R.id.list_row_last_used);
         lastUsed.setText("Last viewed: " + files.get(position).dateViewed.toString());
 
-        vi.setOnClickListener(new View.OnClickListener() {
+        view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.d("Opening file with id", Long.toString(files.get(position).id));
@@ -176,6 +175,35 @@ class listAdapter extends BaseAdapter {
             }
         });
 
-        return vi;
+        Button button = (Button) view.findViewById(R.id.list_row_button);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                PopupMenu popupMenu = new PopupMenu(context, v);
+                String []lstFb = new String[] {"Rename", "Details", "Remove from History", "Delete"};
+                for (int i = 0; i < lstFb.length; i++) {
+                    popupMenu.getMenu().add(lstFb[i]);
+                }
+                popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    public boolean onMenuItemClick(MenuItem item) {
+                        switch (item.toString()) {
+                            case "Rename":
+                                return true;
+                            case "Details":
+                                return true;
+                            case "Remove from History":
+                                return true;
+                            case "Delete":
+                                return true;
+                        }
+                        return false;
+                    }
+                });
+
+                popupMenu.show();
+            }
+        });
+
+        return view;
     }
 }

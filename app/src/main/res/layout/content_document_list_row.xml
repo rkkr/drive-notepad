@@ -15,7 +15,7 @@
         android:padding="0dp">
 
         <TextView xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/text_file_name"
+            android:id="@+id/list_row_document_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
@@ -24,7 +24,7 @@
             android:textStyle="bold" />
 
         <TextView xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/text_file_last_used"
+            android:id="@+id/list_row_last_used"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
@@ -39,6 +39,6 @@
         android:layout_height="50dp"
         android:layout_gravity="center_vertical"
         android:text="&#8942;"
-        android:id="@+id/button"/>
+        android:id="@+id/list_row_button"/>
 
 </LinearLayout>
