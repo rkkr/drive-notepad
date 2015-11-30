@@ -17,81 +17,127 @@ public class FileHelper {
 
     private DBHelper dbHelper;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    public FileHelper(Context context)
-    {
+    public FileHelper(Context context){
         dbHelper = new DBHelper(context);
     }
 
-    public boolean AddItem(File file)
-    {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-
-        ContentValues values = new ContentValues();
-        values.put(DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID, file.driveId.encodeToString());
-        values.put(DBContracts.FileEntry.COLUMN_NAME_CONTENTS, file.contents);
-        values.put(DBContracts.FileEntry.COLUMN_NAME_LASTUSED, dateFormat.format(file.lastUsed));
-        values.put(DBContracts.FileEntry.COLUMN_NAME_FILENAME, file.fileName);
-        values.put(DBContracts.FileEntry.COLUMN_NAME_FILESIZE, file.fileSize);
-        values.put(DBContracts.FileEntry.COLUMN_NAME_STATE, file.state);
-
-        Log.d("Adding item to db", values.toString());
-
-        long newRowId = db.insert(DBContracts.FileEntry.TABLE_NAME, null, values);
-        return newRowId > -1;
+    private File CursorToFile(Cursor cursor){
+        File file = new File();
+        file.id = cursor.getLong(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_ID));
+        if (cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID)) != null)
+            file.driveId = DriveId.decodeFromString(cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID)));
+        file.fileName = cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_FILENAME));
+        file.fileSize = cursor.getLong(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_FILESIZE));
+        file.contents = cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_CONTENTS));
+        file.state = cursor.getLong(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_STATE));
+        try {
+            file.dateModified = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_DATEMODIFIED)));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        try {
+            file.dateViewed = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_DATEVIEWED)));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return file;
     }
 
-    public boolean ItemExists(File file)
-    {
+    private ContentValues FileToContentValues(File file){
+        ContentValues values = new ContentValues();
+        if (file.driveId != null)
+            values.put(DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID, file.driveId.encodeToString());
+        if (file.contents != null)
+            values.put(DBContracts.FileEntry.COLUMN_NAME_CONTENTS, file.contents);
+        if (file.dateModified != null)
+            values.put(DBContracts.FileEntry.COLUMN_NAME_DATEMODIFIED, dateFormat.format(file.dateModified));
+        if (file.dateViewed != null)
+            values.put(DBContracts.FileEntry.COLUMN_NAME_DATEVIEWED, dateFormat.format(file.dateViewed));
+        if (file.fileName != null)
+            values.put(DBContracts.FileEntry.COLUMN_NAME_FILENAME, file.fileName);
+        if (file.fileSize != -1)
+            values.put(DBContracts.FileEntry.COLUMN_NAME_FILESIZE, file.fileSize);
+        if (file.state != -1)
+            values.put(DBContracts.FileEntry.COLUMN_NAME_STATE, file.state);
+        return values;
+    }
+
+    public long SaveItem(File file){
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = FileToContentValues(file);
+
+        if (file.id == -1) {
+            Log.d("Adding item to db", values.toString());
+            return db.insert(DBContracts.FileEntry.TABLE_NAME, null, values);
+        } else {
+            Log.d("Updating item to db", values.toString());
+            if (db.update(
+                    DBContracts.FileEntry.TABLE_NAME,
+                    values,
+                    DBContracts.FileEntry.COLUMN_NAME_ID + " = ?",
+                    new String[]{Long.toString(file.id)}
+            ) != 1)
+                return -1;
+            return file.id;
+        }
+
+    }
+
+    public File GetItem(DriveId driveId){
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         Cursor cursor = db.query(
                 DBContracts.FileEntry.TABLE_NAME,
                 null,
                 DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID + " = ?",
-                new String[]{file.driveId.encodeToString()},
+                new String[]{driveId.encodeToString()},
                 null,
                 null,
                 null
         );
 
-        boolean exists = cursor.getCount() > 0;
+        if (cursor.getCount() != 1)
+            return null;
+
+        cursor.moveToFirst();
+        File file = CursorToFile(cursor);
         cursor.close();
-        return exists;
+
+        return file;
     }
 
-    public boolean UpdateItem(File file)
-    {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
+    public File GetItem(long id){
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        ContentValues values = new ContentValues();
-        values.put(DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID, file.driveId.encodeToString());
-        values.put(DBContracts.FileEntry.COLUMN_NAME_CONTENTS, file.contents);
-        values.put(DBContracts.FileEntry.COLUMN_NAME_LASTUSED, dateFormat.format(file.lastUsed));
-        values.put(DBContracts.FileEntry.COLUMN_NAME_FILENAME, file.fileName);
-        values.put(DBContracts.FileEntry.COLUMN_NAME_FILESIZE, file.fileSize);
-        values.put(DBContracts.FileEntry.COLUMN_NAME_STATE, file.state);
-
-        Log.d("Updating item to db", values.toString());
-
-        int rowsUpdated = db.update(
+        Cursor cursor = db.query(
                 DBContracts.FileEntry.TABLE_NAME,
-                values,
-                DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID + " = ?",
-                new String[]{file.driveId.encodeToString()}
+                null,
+                DBContracts.FileEntry.COLUMN_NAME_ID + " = ?",
+                new String[]{Long.toString(id)},
+                null,
+                null,
+                null
         );
 
-        return rowsUpdated == 1;
+        if (cursor.getCount() != 1)
+            return null;
+
+        cursor.moveToFirst();
+        File file = CursorToFile(cursor);
+        cursor.close();
+
+        return file;
     }
 
-    public ArrayList<File> LoadItems()
+    public ArrayList<File> GetItems()
     {
-        String sortOrder = DBContracts.FileEntry.COLUMN_NAME_LASTUSED + " DESC";
+        String sortOrder = DBContracts.FileEntry.COLUMN_NAME_DATEVIEWED + " DESC";
 
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         Cursor cursor = db.query(
                 DBContracts.FileEntry.TABLE_NAME, // The table to query
-                null,                         // The columns to return
+                null,                             // The columns to return
                 null,                             // The columns for the WHERE clause
                 null,                             // The values for the WHERE clause
                 null,                             // don't group the rows
@@ -103,19 +149,7 @@ public class FileHelper {
         cursor.moveToFirst();
         for(cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext())
         {
-            File file = new File();
-            file.driveId = DriveId.decodeFromString(cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID)));
-            file.fileName = cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_FILENAME));
-            file.fileSize = cursor.getLong(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_FILESIZE));
-            file.contents = cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_CONTENTS));
-            file.state = cursor.getLong(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_STATE));
-            try {
-                file.lastUsed = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_LASTUSED)));
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-
-            files.add(file);
+            files.add(CursorToFile(cursor));
         }
         cursor.close();
         return files;

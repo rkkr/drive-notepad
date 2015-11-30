@@ -6,10 +6,10 @@
         android:title="Settings"
         android:orderInCategory="100"
         app:showAsAction="ifRoom"
-        android:icon="@android:drawable/ic_menu_preferences"/>
+        android:icon="@drawable/ic_settings_white_48dp"/>
     <item android:id="@+id/action_open"
         android:title="Open"
         android:orderInCategory="1"
         app:showAsAction="always"
-        android:icon="@android:drawable/ic_menu_search"/>
+        android:icon="@drawable/ic_folder_white_48dp"/>
 </menu>

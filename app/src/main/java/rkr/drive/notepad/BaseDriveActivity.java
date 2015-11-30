@@ -17,7 +17,7 @@ package rkr.drive.notepad;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
-import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender.SendIntentException;
 import android.os.Bundle;
@@ -38,8 +38,7 @@ public abstract class BaseDriveActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener {
 
     protected static final int REQUEST_CODE_OPEN = 3;
-    protected static final int REQUEST_CODE_LOAD_HISTORY = 4;
-    protected static final String INTENT_DRIVE_ID = "DRIVE_ID";
+    //protected static final String INTENT_DRIVE_ID = "DRIVE_ID";
 
     private static final String TAG = "BaseDriveActivity";
 
@@ -54,11 +53,6 @@ public abstract class BaseDriveActivity extends AppCompatActivity implements
     protected static final int REQUEST_CODE_RESOLUTION = 1;
 
     /**
-     * Next available request code.
-     */
-    protected static final int NEXT_AVAILABLE_REQUEST_CODE = 2;
-
-    /**
      * Google API client.
      */
     protected static GoogleApiClient mGoogleApiClient;
@@ -67,71 +61,61 @@ public abstract class BaseDriveActivity extends AppCompatActivity implements
      * Selected account name to authorize the app for and authenticate the
      * client with.
      */
-    protected String mAccountName;
+    protected static String mAccountName;
 
-    /**
-     * Called on activity creation. Handlers {@code EXTRA_ACCOUNT_NAME} for
-     * handle if there is one set. Otherwise, looks for the first Google account
-     * on the device and automatically picks it for client connections.
-     */
-    @Override
-    protected void onCreate(Bundle b) {
-        super.onCreate(b);
-        if (b != null) {
-            mAccountName = b.getString(EXTRA_ACCOUNT_NAME);
-        }
-        if (mAccountName == null) {
-            mAccountName = getIntent().getStringExtra(EXTRA_ACCOUNT_NAME);
-        }
 
-        if (mAccountName == null) {
-            Account[] accounts = AccountManager.get(this).getAccountsByType("com.google");
-            if (accounts.length == 0) {
-                Log.d(TAG, "Must have a Google account installed");
-                return;
-            }
-            mAccountName = accounts[0].name;
-        }
-    }
-
-    /**
-     * Saves the activity state.
-     */
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putString(EXTRA_ACCOUNT_NAME, mAccountName);
-    }
-
-    /**
-     * Called when activity gets visible. A connection to Drive services need to
-     * be initiated as soon as the activity is visible. Registers
-     * {@code ConnectionCallbacks} and {@code OnConnectionFailedListener} on the
-     * activities itself.
-     */
     @Override
     protected void onResume() {
         super.onResume();
+        ConnectApiClient();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        GetAccountName();
+    }
+
+    private void GetAccountName()
+    {
+        if (mAccountName != null)
+            return;
+
+        Account[] accounts = AccountManager.get(this).getAccountsByType("com.google");
+        if (accounts.length == 0) {
+            Log.d(TAG, "Must have a Google account installed");
+            return;
+        }
+        if (accounts.length > 1) {
+            Log.d(TAG, "Multiple accounts found");
+            return;
+        }
+        mAccountName = accounts[0].name;
+    }
+
+    private void ConnectApiClient()
+    {
         if (mAccountName == null) {
             return;
         }
-        // TODO: Don't set account name explicitly and remove required
-        // permissions to query available accounts.
         if (mGoogleApiClient == null) {
             mGoogleApiClient = new GoogleApiClient.Builder(this)
-                    .addApi(Drive.API).addScope(Drive.SCOPE_FILE)
-                    .setAccountName(mAccountName).addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this).build();
+                    .addApi(Drive.API)
+                    .addScope(Drive.SCOPE_FILE)
+                    .setAccountName(mAccountName)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .build();
         }
-        mGoogleApiClient.connect();
+        if (!mGoogleApiClient.isConnected())
+            mGoogleApiClient.connect();
     }
 
     /**
      * Handles resolution callbacks.
      */
     @Override
-    protected void onActivityResult(int requestCode, int resultCode,
-            Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_CODE_RESOLUTION && resultCode == RESULT_OK) {
             mGoogleApiClient.connect();
