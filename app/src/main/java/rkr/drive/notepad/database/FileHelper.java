@@ -32,12 +32,12 @@ public class FileHelper {
         file.state = cursor.getLong(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_STATE));
         try {
             file.dateModified = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_DATEMODIFIED)));
-        } catch (ParseException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         try {
             file.dateViewed = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_DATEVIEWED)));
-        } catch (ParseException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return file;
