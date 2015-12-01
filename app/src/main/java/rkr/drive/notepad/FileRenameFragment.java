@@ -9,18 +9,23 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 
+import rkr.drive.notepad.database.File;
+
 public class FileRenameFragment extends DialogFragment {
 
+    private static File mFile;
+
     public interface EditNameDialogListener {
-        void onFinishEditDialog(String inputText);
+        void onFinishEditDialog(File mFile);
     }
 
     public FileRenameFragment(){};
 
-    public static FileRenameFragment newInstance(String currentFileName) {
+    public static FileRenameFragment newInstance(File file) {
         FileRenameFragment frag = new FileRenameFragment();
         Bundle args = new Bundle();
-        args.putString("fileName", currentFileName);
+        mFile = file;
+        args.putString("fileName", mFile.fileName);
         frag.setArguments(args);
 
         return frag;
@@ -49,7 +54,8 @@ public class FileRenameFragment extends DialogFragment {
             @Override
             public void onClick(View v) {
                 EditNameDialogListener listener = (EditNameDialogListener) getActivity();
-                listener.onFinishEditDialog(mEditText.getText().toString());
+                mFile.fileName = mEditText.getText().toString();
+                listener.onFinishEditDialog(mFile);
                 dismiss();
             }
         });
