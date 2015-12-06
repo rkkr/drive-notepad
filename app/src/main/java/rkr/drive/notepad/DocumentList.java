@@ -1,14 +1,16 @@
 package rkr.drive.notepad;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,32 +19,27 @@ import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.drive.Drive;
-import com.google.android.gms.drive.DriveApi;
-import com.google.android.gms.drive.DriveFile;
-import com.google.android.gms.drive.DriveFolder;
 import com.google.android.gms.drive.DriveId;
-import com.google.android.gms.drive.DriveResource;
 import com.google.android.gms.drive.MetadataChangeSet;
 import com.google.android.gms.drive.OpenFileActivityBuilder;
 
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import rkr.drive.notepad.database.File;
 import rkr.drive.notepad.database.FileHelper;
 
 
-public class DocumentList extends BaseDriveActivity implements FileRenameFragment.EditNameDialogListener {
+public class DocumentList extends BaseDriveActivity implements
+        FileRenameFragment.EditNameDialogListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +78,32 @@ public class DocumentList extends BaseDriveActivity implements FileRenameFragmen
         }
     }
 
+    private String GetCategory(Date date) {
+        Calendar cal = Calendar.getInstance();
+
+        cal.set(Calendar.HOUR_OF_DAY, 0); // ! clear would not reset the hour of day !
+        cal.clear(Calendar.MINUTE);
+        cal.clear(Calendar.SECOND);
+        cal.clear(Calendar.MILLISECOND);
+        if (cal.getTime().before(date))
+            return "Today";
+
+        cal.set(Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek());
+        if (cal.getTime().before(date))
+            return "This week";
+
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        if (cal.getTime().before(date))
+            return "This month";
+
+        cal.set(Calendar.DAY_OF_YEAR, 1);
+        if (cal.getTime().before(date))
+            return "This year";
+
+        return "Older";
+    }
+
+
     private void LoadHistory() {
         //TODO: load file names from drive
 
@@ -88,7 +111,18 @@ public class DocumentList extends BaseDriveActivity implements FileRenameFragmen
         List<File> files = fileHelper.GetItems();
         ListView fileList = (ListView) findViewById(R.id.file_history);
 
-        fileList.setAdapter(new listAdapter(this, files, getSupportFragmentManager()));
+        String currentHeader = "";
+        ArrayList items = new ArrayList();
+        for(File file : files) {
+            if (!GetCategory(file.dateViewed).equals(currentHeader)) {
+                currentHeader = GetCategory(file.dateViewed);
+                items.add(new ListViewSeparator(currentHeader));
+            }
+            items.add(file);
+        }
+        items.add(new ListViewFooter());
+
+        fileList.setAdapter(new listAdapter(this, items, getSupportFragmentManager(), mGoogleApiClient));
     }
 
     /*private void RefreshDataFromDrive() {
@@ -138,14 +172,15 @@ public class DocumentList extends BaseDriveActivity implements FileRenameFragmen
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_settings) {
+        /*if (id == R.id.action_settings) {
             Intent intent = new Intent(this, SettingsActivity.class);
             startActivity(intent);
 
             return true;
-        }
+        }*/
         if (id == R.id.action_open) {
             if (!mGoogleApiClient.isConnected()) {
+                mGoogleApiClient.connect();
                 Log.e("DocumentList", "Not connected to drive");
                 Toast.makeText(this, "Not connected to Drive", Toast.LENGTH_SHORT).show();
                 return false;
@@ -188,25 +223,28 @@ public class DocumentList extends BaseDriveActivity implements FileRenameFragmen
 class listAdapter extends BaseAdapter {
 
     private Context context;
-    private List<File> files;
+    //private List<File> files;
+    private ArrayList items;
     private FragmentManager fragmentManager;
     private LayoutInflater inflater = null;
+    private GoogleApiClient googleApiClient;
 
-    public listAdapter(Context context, List<File> files, FragmentManager fragmentManager) {
+    public listAdapter(Context context, ArrayList items, FragmentManager fragmentManager, GoogleApiClient googleApiClient) {
         this.context = context;
-        this.files = files;
+        this.items = items;
         this.fragmentManager = fragmentManager;
         this.inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        this.googleApiClient = googleApiClient;
     }
 
     @Override
     public int getCount() {
-        return this.files.size();
+        return this.items.size();
     }
 
     @Override
     public Object getItem(int position) {
-        return this.files.get(position);
+        return this.items.get(position);
     }
 
     @Override
@@ -215,22 +253,45 @@ class listAdapter extends BaseAdapter {
     }
 
     @Override
-    public View getView(final int position, View view, ViewGroup parent) {
-        //Load view
+    public View getView(int position, View view, final ViewGroup parent) {
+        if (items.get(position).getClass() == ListViewFooter.class) {
+            view = inflater.inflate(R.layout.content_document_list_footer, null);
+            return view;
+        }
+
+        if (items.get(position).getClass() == ListViewSeparator.class) {
+            view = inflater.inflate(R.layout.content_document_list_category, null);
+            TextView header = (TextView) view.findViewById(R.id.list_row_document_category);
+            ListViewSeparator separator = (ListViewSeparator) items.get(position);
+            header.setText(separator.title);
+            return view;
+        }
+
+        final File file = (File)items.get(position);
         view = inflater.inflate(R.layout.content_document_list_row, null);
+        //Load view
+
         final TextView fileName = (TextView) view.findViewById(R.id.list_row_document_name);
-        fileName.setText(files.get(position).fileName);
+        fileName.setText(file.fileName);
         TextView lastUsed = (TextView) view.findViewById(R.id.list_row_last_used);
-        lastUsed.setText("Last viewed: " + files.get(position).dateViewed.toString());
+        if (file.dateViewed != null)
+            lastUsed.append(DateUtils.getRelativeTimeSpanString(context, file.dateViewed.getTime(), false));
+
+        //TODO: add normal grey padding
+        //TODO: add grouping
+        if (getCount() == position + 1) {
+            float pad = 100 * context.getResources().getDisplayMetrics().density;
+            view.setPadding(0, 0, 0, (int)pad);
+        }
 
         //On row click
         view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d("Opening file with id", Long.toString(files.get(position).id));
+                Log.d("Opening file with id", Long.toString(file.id));
 
                 Intent intent = new Intent(context, TextEditor.class);
-                intent.putExtra(TextEditor.INTENT_FILE_ID, files.get(position).id);
+                intent.putExtra(TextEditor.INTENT_FILE_ID, file.id);
                 context.startActivity(intent);
             }
         });
@@ -240,8 +301,8 @@ class listAdapter extends BaseAdapter {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                PopupMenu popupMenu = new PopupMenu(context, v);
-                String[] menuItems = new String[]{"Rename", "Details", "Remove from History", "Delete"};
+                final PopupMenu popupMenu = new PopupMenu(context, v);
+                String[] menuItems = new String[]{"Rename", /*"Details",*/ "Remove from History", "Delete"};
                 for (String menuItem : menuItems) {
                     popupMenu.getMenu().add(menuItem);
                 }
@@ -249,14 +310,48 @@ class listAdapter extends BaseAdapter {
                     public boolean onMenuItemClick(MenuItem item) {
                         switch (item.toString()) {
                             case "Rename":
-                                FileRenameFragment alertDialog = FileRenameFragment.newInstance(files.get(position));
+                                FileRenameFragment alertDialog = FileRenameFragment.newInstance(file);
                                 alertDialog.show(fragmentManager, "fragment_alert");
                                 return true;
-                            case "Details":
-                                return true;
+                            //case "Details":
+                            //    return true;
                             case "Remove from History":
+                                new AlertDialog.Builder(context)
+                                        .setIcon(android.R.drawable.ic_dialog_alert)
+                                        .setTitle("Remove from History?")
+                                        .setMessage("File will not be deleted in Google Drive")
+                                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                FileHelper fileHelper = new FileHelper(context);
+                                                fileHelper.DeleteItem(file);
+                                                items.remove(file);
+                                                notifyDataSetChanged();
+                                            }
+
+                                        })
+                                        .setNegativeButton("Cancel", null)
+                                        .show();
                                 return true;
                             case "Delete":
+                                new AlertDialog.Builder(context)
+                                        .setIcon(android.R.drawable.ic_dialog_alert)
+                                        .setTitle("Delete?")
+                                        .setMessage("File will be moved to trash in Google Drive")
+                                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                FileHelper fileHelper = new FileHelper(context);
+                                                fileHelper.DeleteItem(file);
+                                                items.remove(file);
+                                                notifyDataSetChanged();
+
+                                                file.driveId.asDriveFile().trash(googleApiClient);
+                                            }
+
+                                        })
+                                        .setNegativeButton("Cancel", null)
+                                        .show();
                                 return true;
                         }
                         return false;
@@ -268,5 +363,18 @@ class listAdapter extends BaseAdapter {
         });
 
         return view;
+    }
+}
+
+class ListViewSeparator {
+    public String title;
+
+    public ListViewSeparator(String title) {
+        this.title = title;
+    }
+}
+
+class ListViewFooter {
+    public ListViewFooter() {
     }
 }

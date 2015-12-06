@@ -1,9 +1,11 @@
 package rkr.drive.notepad;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.NavUtils;
 import android.support.v7.widget.Toolbar;
@@ -13,6 +15,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
@@ -30,12 +33,15 @@ import java.util.Date;
 import rkr.drive.notepad.database.File;
 import rkr.drive.notepad.database.FileHelper;
 
-public class TextEditor extends BaseDriveActivity implements FileRenameFragment.EditNameDialogListener {
+public class TextEditor extends BaseDriveActivity implements
+        FileRenameFragment.EditNameDialogListener,
+        GoogleApiClient.ConnectionCallbacks {
 
-    private File mFile = new File();
+    private File mFile;
     public static final String INTENT_FILE_ID = "FILE_ID";
     public static final String INTENT_DRIVE_ID = "DRIVE_ID";
     private FileHelper filesHelper;
+    private ProgressDialog pd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,8 +60,39 @@ public class TextEditor extends BaseDriveActivity implements FileRenameFragment.
             }
         });
 
-
         filesHelper = new FileHelper(this);
+
+        pd = new ProgressDialog(this);
+        pd.setTitle("Downloading drive file...");
+        pd.setMessage("Please wait.");
+        pd.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                finish();
+            }
+        });
+
+        Intent intent = getIntent();
+        if (intent.hasExtra(INTENT_FILE_ID) || intent.hasExtra(INTENT_DRIVE_ID)) {
+            mGoogleApiClient.registerConnectionCallbacks(this);
+            pd.show();
+            return;
+        }
+
+        //New file is being created
+        getSupportActionBar().setTitle("Untitled document");
+        mFile = new File();
+        mFile.fileName = "Untitled document";
+
+    }
+
+    @Override
+    public void onConnected(Bundle connectionHint) {
+        //File already loaded
+        if (mFile != null)
+            return;
+
+        Log.i("TextEditor", "Loading content after connection");
 
         Intent intent = getIntent();
         //File opened from history
@@ -71,12 +108,6 @@ public class TextEditor extends BaseDriveActivity implements FileRenameFragment.
             OpenDriveFile(driveId);
             return;
         }
-        //New file is being created
-        getSupportActionBar().setTitle("Untitled document");
-        mFile = new File();
-        mFile.fileName = "Untitled document";
-        mFile.contents = "";
-
     }
 
     @Override
@@ -89,11 +120,20 @@ public class TextEditor extends BaseDriveActivity implements FileRenameFragment.
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
-                NavUtils.navigateUpFromSameTask(this);
+                finish();
                 return true;
             case R.id.action_save:
                 SaveFile();
                 return true;
+            case R.id.rename:
+                FragmentManager fm = getSupportFragmentManager();
+                FileRenameFragment alertDialog = FileRenameFragment.newInstance(mFile);
+                alertDialog.show(fm, "fragment_alert");
+                return true;
+            /*case R.id.action_settings:
+                Intent intent = new Intent(this, SettingsActivity.class);
+                startActivity(intent);
+                return true;*/
         }
         return super.onOptionsItemSelected(item);
     }
@@ -109,7 +149,7 @@ public class TextEditor extends BaseDriveActivity implements FileRenameFragment.
 
                 String errors = GetFileOpenErrors(fileMime, fileSize);
                 if (!errors.isEmpty()){
-                    new android.support.v7.app.AlertDialog.Builder(getApplicationContext())
+                    new AlertDialog.Builder(TextEditor.this)
                             .setIcon(android.R.drawable.ic_dialog_alert)
                             .setTitle("Invalid file")
                             .setMessage(errors + "Are you sure you want to open?")
@@ -144,27 +184,36 @@ public class TextEditor extends BaseDriveActivity implements FileRenameFragment.
 
         //file.fileName = metadata.getOriginalFilename();
         file.fileName = metadata.getTitle();
-        file.fileSize = metadata.getFileSize();
         file.driveId = driveId;
-        file.dateModified = metadata.getModifiedDate();
-        file.id = filesHelper.SaveItem(file);
+        file = filesHelper.SaveItem(file);
         return file;
     }
 
-    private void OpenFile(File file) {
+    private void OpenFile(final File file) {
         mFile = file;
-        final FileHelper fileHelper = new FileHelper(getApplicationContext());
-        final ProgressDialog pd = new ProgressDialog(this);
-        pd.setTitle("Downloading drive file...");
-        pd.setMessage("Please wait.");
-        pd.setCancelable(false);
-        pd.show();
 
         PendingResult<DriveApi.DriveContentsResult> contentsResult = file.driveId.asDriveFile().open(mGoogleApiClient, DriveFile.MODE_READ_ONLY, null);
         contentsResult.setResultCallback(new ResultCallback<DriveApi.DriveContentsResult>() {
             @Override
             public void onResult(DriveApi.DriveContentsResult driveContentsResult) {
                 Log.d("DocumentList", "In file open");
+                if (driveContentsResult.getDriveContents() == null) {
+                    //There is no file
+                    new AlertDialog.Builder(TextEditor.this)
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .setTitle("Invalid file")
+                            .setMessage("Document has no content")
+                            .setPositiveButton("Close", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    finish();
+                                }
+                            })
+                            .show();
+                    FileHelper fileHelper = new FileHelper(getApplicationContext());
+                    fileHelper.DeleteItem(file);
+                    return;
+                }
                 String contents = Utils.readFromInputStream(driveContentsResult.getDriveContents().getInputStream());
 
                 EditText textField = (EditText) findViewById(R.id.editText);
@@ -229,7 +278,7 @@ public class TextEditor extends BaseDriveActivity implements FileRenameFragment.
                                 public void onResult(DriveFolder.DriveFileResult driveFileResult) {
                                     if (driveFileResult.getStatus().isSuccess()) {
                                         mFile.driveId = driveFileResult.getDriveFile().getDriveId();
-                                        filesHelper.SaveItem(mFile);
+                                        mFile = filesHelper.SaveItem(mFile);
 
                                         Log.d("DocumentList", "File saved");
                                     }
@@ -267,16 +316,9 @@ public class TextEditor extends BaseDriveActivity implements FileRenameFragment.
         filesHelper.SaveItem(file);
     }
 
-    private void SaveFile()
-    {
-
-        //mFile.contents = textField.getText().toString();
-        mFile.contents = "";
-        mFile.fileSize = mFile.contents.length();
+    private void SaveFile() {
         mFile.dateViewed = new Date();
-        //mFile.dateModified = new Date();
-
-        filesHelper.SaveItem(mFile);
+        mFile = filesHelper.SaveItem(mFile);
 
         UploadDriveFile();
     }

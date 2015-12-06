@@ -37,6 +37,7 @@ public class FileRenameFragment extends DialogFragment {
 
         final EditText mEditText = (EditText) view.findViewById(R.id.editFileName);
         mEditText.setText(getArguments().getString("fileName", "Untitled document"));
+        mEditText.selectAll();
         mEditText.requestFocus();
 
         getDialog().setTitle("Rename document");

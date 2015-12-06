@@ -7,20 +7,12 @@
         android:orderInCategory="100"
         app:showAsAction="always"
         android:icon="@drawable/ic_save_white_48dp"/>
-    <item android:id="@+id/action_settings"
+    <!--<item android:id="@+id/action_settings"
         android:title="Settings"
         android:orderInCategory="100"
-        app:showAsAction="never"/>
-    <item android:id="@+id/discard_changes"
-        android:title="Discard Changes"
-        android:orderInCategory="1"
-        app:showAsAction="never"/>
+        app:showAsAction="never"/>-->
     <item android:id="@+id/rename"
         android:title="Rename"
         android:orderInCategory="2"
-        app:showAsAction="never"/>
-    <item android:id="@+id/close"
-        android:title="Close"
-        android:orderInCategory="101"
         app:showAsAction="never"/>
 </menu>

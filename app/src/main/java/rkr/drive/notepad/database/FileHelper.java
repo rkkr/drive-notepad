@@ -21,20 +21,12 @@ public class FileHelper {
         dbHelper = new DBHelper(context);
     }
 
-    private File CursorToFile(Cursor cursor){
+    private File CursorToFile(Cursor cursor) {
         File file = new File();
         file.id = cursor.getLong(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_ID));
         if (cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID)) != null)
             file.driveId = DriveId.decodeFromString(cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID)));
         file.fileName = cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_FILENAME));
-        file.fileSize = cursor.getLong(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_FILESIZE));
-        file.contents = cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_CONTENTS));
-        file.state = cursor.getLong(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_STATE));
-        try {
-            file.dateModified = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_DATEMODIFIED)));
-        } catch (Exception e) {
-            //e.printStackTrace();
-        }
         try {
             file.dateViewed = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(DBContracts.FileEntry.COLUMN_NAME_DATEVIEWED)));
         } catch (Exception e) {
@@ -43,47 +35,43 @@ public class FileHelper {
         return file;
     }
 
-    private ContentValues FileToContentValues(File file){
+    private ContentValues FileToContentValues(File file) {
         ContentValues values = new ContentValues();
         if (file.driveId != null)
             values.put(DBContracts.FileEntry.COLUMN_NAME_DRIVE_ID, file.driveId.encodeToString());
-        if (file.contents != null)
-            values.put(DBContracts.FileEntry.COLUMN_NAME_CONTENTS, file.contents);
-        if (file.dateModified != null)
-            values.put(DBContracts.FileEntry.COLUMN_NAME_DATEMODIFIED, dateFormat.format(file.dateModified));
         if (file.dateViewed != null)
             values.put(DBContracts.FileEntry.COLUMN_NAME_DATEVIEWED, dateFormat.format(file.dateViewed));
         if (file.fileName != null)
             values.put(DBContracts.FileEntry.COLUMN_NAME_FILENAME, file.fileName);
-        if (file.fileSize != -1)
-            values.put(DBContracts.FileEntry.COLUMN_NAME_FILESIZE, file.fileSize);
-        if (file.state != -1)
-            values.put(DBContracts.FileEntry.COLUMN_NAME_STATE, file.state);
         return values;
     }
 
-    public long SaveItem(File file){
+    public File SaveItem(File file) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = FileToContentValues(file);
 
         if (file.id == -1) {
             Log.d("Adding item to db", values.toString());
-            return db.insert(DBContracts.FileEntry.TABLE_NAME, null, values);
+            file.id =  db.insert(DBContracts.FileEntry.TABLE_NAME, null, values);
+            db.close();
+            return file;
         } else {
             Log.d("Updating item to db", values.toString());
-            if (db.update(
+            int rows = db.update(
                     DBContracts.FileEntry.TABLE_NAME,
                     values,
                     DBContracts.FileEntry.COLUMN_NAME_ID + " = ?",
-                    new String[]{Long.toString(file.id)}
-            ) != 1)
-                return -1;
-            return file.id;
+                    new String[]{Long.toString(file.id)});
+            db.close();
+            if (rows == 1)
+                return file;
+            else
+                return null;
         }
 
     }
 
-    public File GetItem(DriveId driveId){
+    public File GetItem(DriveId driveId) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         Cursor cursor = db.query(
@@ -106,7 +94,7 @@ public class FileHelper {
         return file;
     }
 
-    public File GetItem(long id){
+    public File GetItem(long id) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         Cursor cursor = db.query(
@@ -127,6 +115,16 @@ public class FileHelper {
         cursor.close();
 
         return file;
+    }
+
+    public int DeleteItem(File file) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        int rows =  db.delete(DBContracts.FileEntry.TABLE_NAME,
+                DBContracts.FileEntry.COLUMN_NAME_ID + " = ?",
+                new String[]{Long.toString(file.id)});
+        db.close();
+        return rows;
     }
 
     public ArrayList<File> GetItems()

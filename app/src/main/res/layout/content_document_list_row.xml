@@ -3,16 +3,15 @@
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#ffffff"
-    android:padding="15dp">
+    android:background="#ffffff">
 
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:orientation="vertical"
-        android:layout_width="300dp"
+        android:layout_width="0dp"
         android:layout_weight="1"
         android:layout_height="wrap_content"
         android:background="#ffffff"
-        android:padding="0dp">
+        android:padding="5dp">
 
         <TextView xmlns:android="http://schemas.android.com/apk/res/android"
             android:id="@+id/list_row_document_name"
@@ -20,7 +19,8 @@
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:textSize="20sp"
-            android:text="file name"
+            android:text="Untitled Document"
+            android:padding="5dp"
             android:textStyle="bold" />
 
         <TextView xmlns:android="http://schemas.android.com/apk/res/android"
@@ -28,17 +28,22 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:text="last used date"
+            android:text="Opened by me: "
+            android:padding="5dp"
             android:textSize="12sp" />
 
     </LinearLayout>
 
     <Button
-        style="?android:attr/buttonStyleSmall"
+        style="?android:attr/borderlessButtonStyle"
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:layout_gravity="center_vertical"
         android:text="&#8942;"
-        android:id="@+id/list_row_button"/>
+        android:id="@+id/list_row_button"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:background="@android:color/transparent"
+        android:textColor="@android:color/darker_gray" />
 
 </LinearLayout>

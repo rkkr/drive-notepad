@@ -4,6 +4,11 @@
 
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
+    <!--
+    Icon based on:
+        Vicent Pla https://www.iconfinder.com/icons/204794/myphoneexplorer_notes_icon
+        Zlatko Najdenovski https://www.iconfinder.com/icons/317713/drive_google_google_drive_icon
+    -->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -30,11 +35,8 @@
         </activity>
         <activity
             android:name=".SettingsActivity"
-            android:label="@string/title_activity_settings"></activity>
-        <activity
-            android:name=".FileRenameFragment"
-            android:label="@string/title_activity_file_rename"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:label="@string/title_activity_settings"
+            android:theme="@android:style/Theme.Holo.Light"/>
     </application>
 
 </manifest>

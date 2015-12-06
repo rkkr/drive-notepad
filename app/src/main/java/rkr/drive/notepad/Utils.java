@@ -29,7 +29,7 @@ public class Utils {
         String line;
         try {
             while ((line = reader.readLine()) != null) {
-                builder.append(line);
+                builder.append(line).append('\n');
             }
             reader.close();
             return builder.toString();
