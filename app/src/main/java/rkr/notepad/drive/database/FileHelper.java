@@ -1,4 +1,4 @@
-package rkr.drive.notepad.database;
+package rkr.notepad.drive.database;
 
 import android.content.ContentValues;
 import android.content.Context;

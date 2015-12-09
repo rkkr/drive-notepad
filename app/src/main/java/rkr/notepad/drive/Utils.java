@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package rkr.drive.notepad;
+package rkr.notepad.drive;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

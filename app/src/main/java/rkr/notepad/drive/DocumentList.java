@@ -1,4 +1,4 @@
-package rkr.drive.notepad;
+package rkr.notepad.drive;
 
 import android.content.Context;
 import android.content.DialogInterface;
@@ -34,8 +34,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-import rkr.drive.notepad.database.File;
-import rkr.drive.notepad.database.FileHelper;
+import rkr.notepad.drive.database.File;
+import rkr.notepad.drive.database.FileHelper;
 
 
 public class DocumentList extends BaseDriveActivity implements
@@ -319,7 +319,7 @@ class listAdapter extends BaseAdapter {
                                 new AlertDialog.Builder(context)
                                         .setIcon(android.R.drawable.ic_dialog_alert)
                                         .setTitle("Remove from History?")
-                                        .setMessage("File will not be deleted in Google Drive")
+                                        .setMessage("File will not be deleted")
                                         .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int which) {
@@ -337,7 +337,7 @@ class listAdapter extends BaseAdapter {
                                 new AlertDialog.Builder(context)
                                         .setIcon(android.R.drawable.ic_dialog_alert)
                                         .setTitle("Delete?")
-                                        .setMessage("File will be moved to trash in Google Drive")
+                                        .setMessage("File will be moved to trash")
                                         .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int which) {

@@ -1,4 +1,4 @@
-package rkr.drive.notepad;
+package rkr.notepad.drive;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -30,8 +30,8 @@ import com.google.android.gms.drive.MetadataChangeSet;
 
 import java.util.Date;
 
-import rkr.drive.notepad.database.File;
-import rkr.drive.notepad.database.FileHelper;
+import rkr.notepad.drive.database.File;
+import rkr.notepad.drive.database.FileHelper;
 
 public class TextEditor extends BaseDriveActivity implements
         FileRenameFragment.EditNameDialogListener,
@@ -63,7 +63,7 @@ public class TextEditor extends BaseDriveActivity implements
         filesHelper = new FileHelper(this);
 
         pd = new ProgressDialog(this);
-        pd.setTitle("Downloading drive file...");
+        pd.setTitle("Downloading file...");
         pd.setMessage("Please wait.");
         pd.setOnCancelListener(new DialogInterface.OnCancelListener() {
             @Override

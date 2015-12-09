@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Drive Notepad</string>
+    <string name="app_name">Notepad for Drive</string>
     <string name="title_activity_settings">Settings</string>
 
     <!-- Strings related to Settings -->

@@ -5,7 +5,7 @@ android {
     buildToolsVersion "23.0.1"
 
     defaultConfig {
-        applicationId "rkr.drive.notepad"
+        applicationId "rkr.notepad.drive"
         minSdkVersion 15
         targetSdkVersion 23
         versionCode 1

@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="rkr.drive.notepad">
+    package="rkr.notepad.drive">
 
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
     <!--
     Icon based on:
         Vicent Pla https://www.iconfinder.com/icons/204794/myphoneexplorer_notes_icon
-        Zlatko Najdenovski https://www.iconfinder.com/icons/317713/drive_google_google_drive_icon
     -->
     <application
         android:allowBackup="true"

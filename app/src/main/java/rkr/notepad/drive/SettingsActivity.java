@@ -1,4 +1,4 @@
-package rkr.drive.notepad;
+package rkr.notepad.drive;
 
 import android.app.Activity;
 import android.os.Bundle;

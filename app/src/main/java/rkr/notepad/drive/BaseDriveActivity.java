@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package rkr.drive.notepad;
+package rkr.notepad.drive;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
