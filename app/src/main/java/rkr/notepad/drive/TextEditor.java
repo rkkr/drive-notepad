@@ -5,28 +5,23 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
+import android.os.Handler;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.NavUtils;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.Toast;
 
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.drive.Drive;
-import com.google.android.gms.drive.DriveApi;
-import com.google.android.gms.drive.DriveFile;
-import com.google.android.gms.drive.DriveFolder;
 import com.google.android.gms.drive.DriveId;
 import com.google.android.gms.drive.DriveResource;
 import com.google.android.gms.drive.Metadata;
-import com.google.android.gms.drive.MetadataChangeSet;
 
 import java.util.Date;
 
@@ -34,14 +29,15 @@ import rkr.notepad.drive.database.File;
 import rkr.notepad.drive.database.FileHelper;
 
 public class TextEditor extends BaseDriveActivity implements
-        FileRenameFragment.EditNameDialogListener,
-        GoogleApiClient.ConnectionCallbacks {
+        FileRenameFragment.EditNameDialogListener {
 
     private File mFile;
     public static final String INTENT_FILE_ID = "FILE_ID";
     public static final String INTENT_DRIVE_ID = "DRIVE_ID";
     private FileHelper filesHelper;
     private ProgressDialog pd;
+    private Handler handler = new Handler();
+    private boolean saveScheduled = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,7 +70,6 @@ public class TextEditor extends BaseDriveActivity implements
 
         Intent intent = getIntent();
         if (intent.hasExtra(INTENT_FILE_ID) || intent.hasExtra(INTENT_DRIVE_ID)) {
-            mGoogleApiClient.registerConnectionCallbacks(this);
             pd.show();
             return;
         }
@@ -84,10 +79,46 @@ public class TextEditor extends BaseDriveActivity implements
         mFile = new File();
         mFile.fileName = "Untitled document";
 
+        RegisterEditWatcher();
     }
 
     @Override
-    public void onConnected(Bundle connectionHint) {
+    protected void onPause() {
+        SaveFile();
+        super.onPause();
+    }
+
+    private void RegisterEditWatcher() {
+        EditText textField = (EditText) findViewById(R.id.editText);
+        textField.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) { }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                //Log.d("Text Editor", "Text has changed");
+                if (saveScheduled)
+                    return;
+
+                saveScheduled = true;
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        saveScheduled = false;
+                        SaveFile();
+                    }
+                }, 1000 * 5);
+
+
+            }
+        });
+    }
+
+    @Override
+    protected void ServiceConnected () {
         //File already loaded
         if (mFile != null)
             return;
@@ -122,9 +153,9 @@ public class TextEditor extends BaseDriveActivity implements
             case android.R.id.home:
                 finish();
                 return true;
-            case R.id.action_save:
+            /*case R.id.action_save:
                 SaveFile();
-                return true;
+                return true;*/
             case R.id.rename:
                 FragmentManager fm = getSupportFragmentManager();
                 FileRenameFragment alertDialog = FileRenameFragment.newInstance(mFile);
@@ -139,7 +170,7 @@ public class TextEditor extends BaseDriveActivity implements
     }
 
     private void OpenDriveFile(final DriveId driveId){
-        PendingResult<DriveResource.MetadataResult> metadataResult = driveId.asDriveFile().getMetadata(mGoogleApiClient);
+        PendingResult<DriveResource.MetadataResult> metadataResult = driveId.asDriveFile().getMetadata(driveService.getApiClient());
         metadataResult.setResultCallback(new ResultCallback<DriveResource.MetadataResult>() {
             @Override
             public void onResult(final DriveResource.MetadataResult metadataResult) {
@@ -192,13 +223,10 @@ public class TextEditor extends BaseDriveActivity implements
     private void OpenFile(final File file) {
         mFile = file;
 
-        PendingResult<DriveApi.DriveContentsResult> contentsResult = file.driveId.asDriveFile().open(mGoogleApiClient, DriveFile.MODE_READ_ONLY, null);
-        contentsResult.setResultCallback(new ResultCallback<DriveApi.DriveContentsResult>() {
+        driveService.DownloadFile(file.driveId, new DriveService.OnFileDownloaded() {
             @Override
-            public void onResult(DriveApi.DriveContentsResult driveContentsResult) {
-                Log.d("DocumentList", "In file open");
-                if (driveContentsResult.getDriveContents() == null) {
-                    //There is no file
+            public void onFileDownloaded(String contents) {
+                if (contents == null) {
                     new AlertDialog.Builder(TextEditor.this)
                             .setIcon(android.R.drawable.ic_dialog_alert)
                             .setTitle("Invalid file")
@@ -214,79 +242,40 @@ public class TextEditor extends BaseDriveActivity implements
                     fileHelper.DeleteItem(file);
                     return;
                 }
-                String contents = Utils.readFromInputStream(driveContentsResult.getDriveContents().getInputStream());
 
                 EditText textField = (EditText) findViewById(R.id.editText);
                 textField.setText(contents);
                 pd.dismiss();
 
                 UpdateFileViewDate();
+                RegisterEditWatcher();
                 assert getSupportActionBar() != null;
                 getSupportActionBar().setTitle(mFile.fileName);
             }
         });
-
-        //TODO: check if file name has changed
     }
 
     private void UploadDriveFile() {
         Log.d("DocumentList", "In file save");
 
-        if (mFile.driveId != null) {
-            //File exists on google drive
-            mFile.driveId.asDriveFile().open(mGoogleApiClient, DriveFile.MODE_WRITE_ONLY, null).setResultCallback(new ResultCallback<DriveApi.DriveContentsResult>() {
-                @Override
-                public void onResult(DriveApi.DriveContentsResult driveContentsResult) {
-                    EditText textField = (EditText) findViewById(R.id.editText);
-                    String contents = textField.getText().toString();
-                    Utils.writeToOutputStream(driveContentsResult.getDriveContents().getOutputStream(), contents);
-
-                    MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
-                            .setTitle(mFile.fileName)
-                            .setPinned(true)
-                            .build();
-
-                    driveContentsResult.getDriveContents().commit(mGoogleApiClient, changeSet).setResultCallback(new ResultCallback<Status>() {
-                        @Override
-                        public void onResult(Status result) {
-                            if (result.getStatus().isSuccess()) {
-                                Log.d("DocumentList", "File saved");
-                            }
-                        }
-                    });
+        EditText textField = (EditText) findViewById(R.id.editText);
+        String contents = textField.getText().toString();
+        driveService.UploadFile(mFile.driveId, contents, mFile.fileName, new DriveService.OnFileUploaded() {
+            @Override
+            public void onFileUploaded(DriveId driveId) {
+                if (driveId == null) {
+                    Toast.makeText(TextEditor.this, "File save failed", Toast.LENGTH_SHORT).show();
+                    return;
                 }
-            });
-        } else {
-            //This is a new file
-            Drive.DriveApi.newDriveContents(mGoogleApiClient).setResultCallback(new ResultCallback<DriveApi.DriveContentsResult>() {
-                @Override
-                public void onResult(DriveApi.DriveContentsResult driveContentsResult) {
-                    EditText textField = (EditText) findViewById(R.id.editText);
-                    String contents = textField.getText().toString();
-                    Utils.writeToOutputStream(driveContentsResult.getDriveContents().getOutputStream(), contents);
-
-                    MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
-                            .setTitle(mFile.fileName)
-                            .setMimeType("text/plain")
-                            .setPinned(true)
-                            .build();
-
-                    Drive.DriveApi.getRootFolder(mGoogleApiClient)
-                            .createFile(mGoogleApiClient, changeSet, driveContentsResult.getDriveContents())
-                            .setResultCallback(new ResultCallback<DriveFolder.DriveFileResult>() {
-                                @Override
-                                public void onResult(DriveFolder.DriveFileResult driveFileResult) {
-                                    if (driveFileResult.getStatus().isSuccess()) {
-                                        mFile.driveId = driveFileResult.getDriveFile().getDriveId();
-                                        mFile = filesHelper.SaveItem(mFile);
-
-                                        Log.d("DocumentList", "File saved");
-                                    }
-                                }
-                            });
+                //New file to save
+                if (mFile.driveId == null) {
+                    mFile.driveId = driveId;
+                    mFile = filesHelper.SaveItem(mFile);
                 }
-            });
-        }
+
+                Log.d("DocumentList", "File saved");
+            }
+        });
     }
 
     private String GetFileOpenErrors(String fileMime, long fileSize){
@@ -328,6 +317,7 @@ public class TextEditor extends BaseDriveActivity implements
         mFile.fileName = file.fileName;
         assert getSupportActionBar() != null;
         getSupportActionBar().setTitle(mFile.fileName);
+        SaveFile();
     }
 
 }

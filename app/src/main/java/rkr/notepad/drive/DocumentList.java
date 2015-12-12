@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AlertDialog;
@@ -23,9 +24,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.drive.Drive;
 import com.google.android.gms.drive.DriveId;
+import com.google.android.gms.drive.DriveResource;
 import com.google.android.gms.drive.MetadataChangeSet;
 import com.google.android.gms.drive.OpenFileActivityBuilder;
 
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import rkr.notepad.drive.database.File;
 import rkr.notepad.drive.database.FileHelper;
@@ -40,6 +42,8 @@ import rkr.notepad.drive.database.FileHelper;
 
 public class DocumentList extends BaseDriveActivity implements
         FileRenameFragment.EditNameDialogListener {
+
+    FileHelper fileHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +62,60 @@ public class DocumentList extends BaseDriveActivity implements
                 view.getContext().startActivity(intent);
             }
         });
+
+        fileHelper = new FileHelper(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         LoadHistory();
+    }
+
+    @Override
+    protected void ServiceConnected () {
+        /*new Thread(new Runnable() {
+            public void run() {
+                boolean changesFound = false;
+
+                ListView fileList = (ListView) findViewById(R.id.file_history);
+                for (int i=0; i < fileList.getCount(); i++) {
+                    //Separators and other decorations
+                    if (!fileList.getItemAtPosition(i).getClass().equals(File.class))
+                        continue;
+
+                    File file = (File) fileList.getItemAtPosition(i);
+
+                    //TODO: Handle deleted file
+                    //TODO: Predownload file contents?
+                    DriveResource.MetadataResult metaResult = file.driveId.asDriveFile().getMetadata(driveService.getApiClient()).await(30, TimeUnit.SECONDS);
+                    if (!metaResult.getStatus().isSuccess()) {
+                        Log.e("DocumentList", "Metadata update failed: " + metaResult.getStatus().getStatusMessage());
+                        continue;
+                    }
+
+                    if (metaResult.getMetadata().isTrashed()) {
+                        fileHelper.DeleteItem(file);
+                        changesFound = true;
+                        continue;
+                    }
+
+                    if (!metaResult.getMetadata().getTitle().equals(file.fileName)) {
+                        file.fileName = metaResult.getMetadata().getTitle();
+                        fileHelper.SaveItem(file);
+                        changesFound = true;
+                        continue;
+                    }
+                }
+
+                if (changesFound) {
+                    Log.i("DocumentList", "Changes were made outside this application, will refresh");
+                    LoadHistory();
+                } else {
+                    Log.d("DocumentList", "No changes found outside application");
+                }
+            }
+        }).start();*/
     }
 
     @Override
@@ -81,7 +138,7 @@ public class DocumentList extends BaseDriveActivity implements
     private String GetCategory(Date date) {
         Calendar cal = Calendar.getInstance();
 
-        cal.set(Calendar.HOUR_OF_DAY, 0); // ! clear would not reset the hour of day !
+        cal.set(Calendar.HOUR_OF_DAY, 0);
         cal.clear(Calendar.MINUTE);
         cal.clear(Calendar.SECOND);
         cal.clear(Calendar.MILLISECOND);
@@ -105,9 +162,6 @@ public class DocumentList extends BaseDriveActivity implements
 
 
     private void LoadHistory() {
-        //TODO: load file names from drive
-
-        FileHelper fileHelper = new FileHelper(this);
         List<File> files = fileHelper.GetItems();
         ListView fileList = (ListView) findViewById(R.id.file_history);
 
@@ -122,45 +176,7 @@ public class DocumentList extends BaseDriveActivity implements
         }
         items.add(new ListViewFooter());
 
-        fileList.setAdapter(new listAdapter(this, items, getSupportFragmentManager(), mGoogleApiClient));
-    }
-
-    /*private void RefreshDataFromDrive() {
-        Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-                ListView fileList = (ListView) findViewById(R.id.file_history);
-                for (int i=0; i < fileList.getCount(); i++) {
-                    File file = (File)fileList.getItemAtPosition(i);
-
-                    DriveResource.MetadataResult metaResult = file.driveId.asDriveFile().getMetadata(mGoogleApiClient).await(30, TimeUnit.SECONDS);
-                    if (!metaResult.getStatus().isSuccess()) {
-                        Log.e("Metada update", "Connection is " + metaResult.getStatus().getStatusMessage());
-                        return;
-                    }
-
-                    file.
-
-                    TextView fileName = (TextView) fileList.findViewById(R.id.list_row_document_name);
-                    fileName.setText(file.fileName);
-                }
-
-
-            }
-        };
-        new Thread(runnable).start();
-    }*/
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        LoadHistory();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        //LoadHistory();
+        fileList.setAdapter(new listAdapter(this, items, getSupportFragmentManager()));
     }
 
     @Override
@@ -179,14 +195,14 @@ public class DocumentList extends BaseDriveActivity implements
             return true;
         }*/
         if (id == R.id.action_open) {
-            if (!mGoogleApiClient.isConnected()) {
-                mGoogleApiClient.connect();
+            if (!driveService.getApiClient().isConnected()) {
+                driveService.getApiClient().connect();
                 Log.e("DocumentList", "Not connected to drive");
                 Toast.makeText(this, "Not connected to Drive", Toast.LENGTH_SHORT).show();
                 return false;
             }
 
-            IntentSender intent = Drive.DriveApi.newOpenFileActivityBuilder().build(mGoogleApiClient);
+            IntentSender intent = Drive.DriveApi.newOpenFileActivityBuilder().build(driveService.getApiClient());
 
             try {
                 startIntentSenderForResult(intent, REQUEST_CODE_OPEN, null, 0, 0, 0);
@@ -207,8 +223,6 @@ public class DocumentList extends BaseDriveActivity implements
             if (_file.id == file.id) {
                 TextView fileName = (TextView) fileList.getChildAt(i).findViewById(R.id.list_row_document_name);
                 fileName.setText(file.fileName);
-
-                FileHelper fileHelper = new FileHelper(this);
                 fileHelper.SaveItem(file);
 
                 break;
@@ -216,25 +230,22 @@ public class DocumentList extends BaseDriveActivity implements
         }
 
         MetadataChangeSet changeSet = new MetadataChangeSet.Builder().setTitle(file.fileName).build();
-        file.driveId.asDriveFile().updateMetadata(mGoogleApiClient, changeSet);
+        file.driveId.asDriveFile().updateMetadata(driveService.getApiClient(), changeSet);
     }
 }
 
 class listAdapter extends BaseAdapter {
 
-    private Context context;
-    //private List<File> files;
+    private DocumentList context;
     private ArrayList items;
     private FragmentManager fragmentManager;
     private LayoutInflater inflater = null;
-    private GoogleApiClient googleApiClient;
 
-    public listAdapter(Context context, ArrayList items, FragmentManager fragmentManager, GoogleApiClient googleApiClient) {
+    public listAdapter(DocumentList context, ArrayList items, FragmentManager fragmentManager) {
         this.context = context;
         this.items = items;
         this.fragmentManager = fragmentManager;
         this.inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        this.googleApiClient = googleApiClient;
     }
 
     @Override
@@ -277,8 +288,6 @@ class listAdapter extends BaseAdapter {
         if (file.dateViewed != null)
             lastUsed.append(DateUtils.getRelativeTimeSpanString(context, file.dateViewed.getTime(), false));
 
-        //TODO: add normal grey padding
-        //TODO: add grouping
         if (getCount() == position + 1) {
             float pad = 100 * context.getResources().getDisplayMetrics().density;
             view.setPadding(0, 0, 0, (int)pad);
@@ -323,8 +332,7 @@ class listAdapter extends BaseAdapter {
                                         .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int which) {
-                                                FileHelper fileHelper = new FileHelper(context);
-                                                fileHelper.DeleteItem(file);
+                                                context.fileHelper.DeleteItem(file);
                                                 items.remove(file);
                                                 notifyDataSetChanged();
                                             }
@@ -341,12 +349,11 @@ class listAdapter extends BaseAdapter {
                                         .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int which) {
-                                                FileHelper fileHelper = new FileHelper(context);
-                                                fileHelper.DeleteItem(file);
+                                                context.fileHelper.DeleteItem(file);
                                                 items.remove(file);
                                                 notifyDataSetChanged();
 
-                                                file.driveId.asDriveFile().trash(googleApiClient);
+                                                file.driveId.asDriveFile().trash(context.driveService.getApiClient());
                                             }
 
                                         })
