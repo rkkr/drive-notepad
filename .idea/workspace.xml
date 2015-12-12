@@ -36,15 +36,7 @@
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="Show only selected application" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6dd5c7ef-8f01-4a39-bfc8-2b15d2288de2" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" afterPath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app/src/main/java/rkr/notepad/drive/BaseDriveActivity.java" afterPath="$PROJECT_DIR$/app/src/main/java/rkr/notepad/drive/BaseDriveActivity.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app/src/main/java/rkr/notepad/drive/DocumentList.java" afterPath="$PROJECT_DIR$/app/src/main/java/rkr/notepad/drive/DocumentList.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app/src/main/java/rkr/notepad/drive/TextEditor.java" afterPath="$PROJECT_DIR$/app/src/main/java/rkr/notepad/drive/TextEditor.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app/build.gradle" afterPath="$PROJECT_DIR$/app/build.gradle" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app/src/main/res/menu/menu_text_editor.xml" afterPath="$PROJECT_DIR$/app/src/main/res/menu/menu_text_editor.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-    </list>
+    <list default="true" id="6dd5c7ef-8f01-4a39-bfc8-2b15d2288de2" name="Default" comment="" />
     <ignored path="drive-notepad.iws" />
     <ignored path=".idea/workspace.xml" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
