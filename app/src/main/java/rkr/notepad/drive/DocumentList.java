@@ -26,7 +26,6 @@ import android.widget.Toast;
 
 import com.google.android.gms.drive.Drive;
 import com.google.android.gms.drive.DriveId;
-import com.google.android.gms.drive.DriveResource;
 import com.google.android.gms.drive.MetadataChangeSet;
 import com.google.android.gms.drive.OpenFileActivityBuilder;
 
@@ -34,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import rkr.notepad.drive.database.File;
 import rkr.notepad.drive.database.FileHelper;
@@ -188,12 +186,6 @@ public class DocumentList extends BaseDriveActivity implements
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        /*if (id == R.id.action_settings) {
-            Intent intent = new Intent(this, SettingsActivity.class);
-            startActivity(intent);
-
-            return true;
-        }*/
         if (id == R.id.action_open) {
             if (!driveService.getApiClient().isConnected()) {
                 driveService.getApiClient().connect();
@@ -202,7 +194,60 @@ public class DocumentList extends BaseDriveActivity implements
                 return false;
             }
 
-            IntentSender intent = Drive.DriveApi.newOpenFileActivityBuilder().build(driveService.getApiClient());
+            IntentSender intent = Drive.DriveApi.newOpenFileActivityBuilder()
+                    .setMimeType(new String[]{
+                            "text/html",
+                            "text/x-asm",
+                            "text/asp",
+                            "text/plain",
+                            "text/x-c",
+                            "text/x-script.csh",
+                            "text/css",
+                            "text/x-script.elisp",
+                            "text/x-setext",
+                            "text/x-fortran",
+                            "text/vnd.fmi.flexstor",
+                            "text/x-h",
+                            "text/x-script",
+                            "text/x-component",
+                            "text/webviewhtml",
+                            "text/x-java-source",
+                            "text/javascript",
+                            "text/ecmascript",
+                            "text/x-script.ksh",
+                            "text/x-script.lisp",
+                            "text/x-la-asf",
+                            "text/x-m",
+                            "text/x-pascal",
+                            "text/pascal",
+                            "text/x-script.perl",
+                            "text/x-script.perl-module",
+                            "text/x-script.phyton",
+                            "text/x-script.rexx",
+                            "text/richtext",
+                            "text/mcf",
+                            "text/vnd.rn-realtext",
+                            "text/x-asm",
+                            "text/x-script.guile",
+                            "text/x-script.scheme",
+                            "text/sgml",
+                            "text/x-sgml",
+                            "text/x-script.sh",
+                            "text/x-server-parsed-html",
+                            "text/x-speech",
+                            "text/x-script.tcl",
+                            "text/x-script.tcsh",
+                            "text/tab-separated-values",
+                            "text/x-uil",
+                            "text/uri-list",
+                            "text/x-uuencode",
+                            "text/x-vcalendar",
+                            "text/vnd.wap.wml",
+                            "text/vnd.wap.wmlscript",
+                            "text/scriplet",
+                            "text/xml",
+                    })
+                    .build(driveService.getApiClient());
 
             try {
                 startIntentSenderForResult(intent, REQUEST_CODE_OPEN, null, 0, 0, 0);

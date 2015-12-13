@@ -34,6 +34,7 @@ public class TextEditor extends BaseDriveActivity implements
     private File mFile;
     public static final String INTENT_FILE_ID = "FILE_ID";
     public static final String INTENT_DRIVE_ID = "DRIVE_ID";
+
     private FileHelper filesHelper;
     private ProgressDialog pd;
     private Handler handler = new Handler();
@@ -68,8 +69,10 @@ public class TextEditor extends BaseDriveActivity implements
             }
         });
 
+
         Intent intent = getIntent();
-        if (intent.hasExtra(INTENT_FILE_ID) || intent.hasExtra(INTENT_DRIVE_ID)) {
+        if (intent.hasExtra(INTENT_FILE_ID) ||
+                intent.hasExtra(INTENT_DRIVE_ID)) {
             pd.show();
             return;
         }
@@ -84,7 +87,9 @@ public class TextEditor extends BaseDriveActivity implements
 
     @Override
     protected void onPause() {
-        SaveFile();
+        //only save if unsaved changes are made
+        if (saveScheduled)
+            SaveFile();
         super.onPause();
     }
 
@@ -153,18 +158,11 @@ public class TextEditor extends BaseDriveActivity implements
             case android.R.id.home:
                 finish();
                 return true;
-            /*case R.id.action_save:
-                SaveFile();
-                return true;*/
             case R.id.rename:
                 FragmentManager fm = getSupportFragmentManager();
                 FileRenameFragment alertDialog = FileRenameFragment.newInstance(mFile);
                 alertDialog.show(fm, "fragment_alert");
                 return true;
-            /*case R.id.action_settings:
-                Intent intent = new Intent(this, SettingsActivity.class);
-                startActivity(intent);
-                return true;*/
         }
         return super.onOptionsItemSelected(item);
     }
@@ -283,11 +281,10 @@ public class TextEditor extends BaseDriveActivity implements
         Log.d("TextEditor", "File size: " + Long.toString(fileSize));
 
         String errors = "";
-        if (fileSize > 8 * 1024 * 1024)
-            errors += String.format("File size is: %d MB.\n", fileSize / 1024 / 1024);
-        if (!fileMime.equals("text/plain") &&
-                !fileMime.contains("xml"))
-            errors += String.format("File format is: %s.\n", fileMime);
+        if (fileSize > 128 * 1024)
+            errors += String.format("File size is too big: %d KB.\n", fileSize / 1024);
+        if (!fileMime.equals("text/plain"))
+            errors += String.format("File format may be unsupported: %s.\n", fileMime);
         return errors;
     }
 
