@@ -370,7 +370,11 @@ class listAdapter extends BaseAdapter {
                             //case "Details":
                             //    return true;
                             case "Remove from History":
-                                new AlertDialog.Builder(context)
+                                context.fileHelper.DeleteItem(file);
+                                items.remove(file);
+                                notifyDataSetChanged();
+
+                                /*new AlertDialog.Builder(context)
                                         .setIcon(android.R.drawable.ic_dialog_alert)
                                         .setTitle("Remove from History?")
                                         .setMessage("File will not be deleted")
@@ -384,7 +388,7 @@ class listAdapter extends BaseAdapter {
 
                                         })
                                         .setNegativeButton("Cancel", null)
-                                        .show();
+                                        .show();*/
                                 return true;
                             case "Delete":
                                 new AlertDialog.Builder(context)
