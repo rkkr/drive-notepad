@@ -21,6 +21,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -68,10 +69,24 @@ public class DocumentList extends BaseDriveActivity implements
     protected void onResume() {
         super.onResume();
         LoadHistory();
+
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (driveService == null || driveService.getApiClient() == null || !driveService.getApiClient().isConnected()) {
+                    ProgressBar progressBar = (ProgressBar) findViewById(R.id.progressBar);
+                    progressBar.setVisibility(View.VISIBLE);
+                }
+            }
+        }, 1000);
+
     }
 
     @Override
     protected void ServiceConnected () {
+        ProgressBar progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        progressBar.setVisibility(View.GONE);
+
         /*new Thread(new Runnable() {
             public void run() {
                 boolean changesFound = false;
