@@ -70,7 +70,7 @@ public class DocumentList extends BaseDriveActivity implements
         super.onResume();
         LoadHistory();
 
-        new Handler().postDelayed(new Runnable() {
+        /*new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
                 if (driveService == null || driveService.getApiClient() == null || !driveService.getApiClient().isConnected()) {
@@ -78,7 +78,7 @@ public class DocumentList extends BaseDriveActivity implements
                     progressBar.setVisibility(View.VISIBLE);
                 }
             }
-        }, 1000);
+        }, 1000);*/
 
     }
 
@@ -177,6 +177,12 @@ public class DocumentList extends BaseDriveActivity implements
     private void LoadHistory() {
         List<File> files = fileHelper.GetItems();
         ListView fileList = (ListView) findViewById(R.id.file_history);
+        TextView helpText = (TextView) findViewById(R.id.helpText);
+
+        if (files.size() == 0) {
+            helpText.setVisibility(View.VISIBLE);
+            return;
+        }
 
         String currentHeader = "";
         ArrayList items = new ArrayList();
@@ -190,6 +196,7 @@ public class DocumentList extends BaseDriveActivity implements
         items.add(new ListViewFooter());
 
         fileList.setAdapter(new listAdapter(this, items, getSupportFragmentManager()));
+        helpText.setVisibility(View.GONE);
     }
 
     @Override

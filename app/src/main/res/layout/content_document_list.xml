@@ -17,11 +17,24 @@
         android:id="@+id/file_history"/>
 
     <ProgressBar
-        style="@style/Widget.AppCompat.ProgressBar"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="fill_parent"
+        android:indeterminate="true"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+        android:id="@+id/progressBar" />
+
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="No recent files found.\nUse open button to open existing file,\nor create a new one with add button."
+        android:id="@+id/helpText"
+        android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
+        android:gravity="center"
+        android:textStyle="italic"
         android:visibility="gone"
-        android:id="@+id/progressBar" />
+        android:textColor="#646464" />
+
 
 </RelativeLayout>
