@@ -9,8 +9,11 @@ import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -18,9 +21,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.Button;
-import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -52,7 +53,6 @@ public class DocumentList extends BaseDriveActivity implements
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -63,72 +63,47 @@ public class DocumentList extends BaseDriveActivity implements
         });
 
         fileHelper = new FileHelper(this);
+
+        final RecyclerView fileList = (RecyclerView) findViewById(R.id.file_history);
+
+        fileList.setHasFixedSize(true);
+        fileList.setLayoutManager(new LinearLayoutManager(this));
+
+        ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int swipeDir) {
+                listAdapter.ViewHolder view = (listAdapter.ViewHolder) viewHolder;
+
+                ((listAdapter)fileList.getAdapter()).remove(view.file);
+            }
+
+            @Override
+            public int getSwipeDirs(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+                if (viewHolder instanceof listAdapter.ViewHolder)
+                    return super.getSwipeDirs(recyclerView, viewHolder);
+                return 0;
+            }
+        };
+
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleItemTouchCallback);
+        itemTouchHelper.attachToRecyclerView(fileList);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         LoadHistory();
-
-        /*new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (driveService == null || driveService.getApiClient() == null || !driveService.getApiClient().isConnected()) {
-                    ProgressBar progressBar = (ProgressBar) findViewById(R.id.progressBar);
-                    progressBar.setVisibility(View.VISIBLE);
-                }
-            }
-        }, 1000);*/
-
     }
 
     @Override
     protected void ServiceConnected () {
         ProgressBar progressBar = (ProgressBar) findViewById(R.id.progressBar);
         progressBar.setVisibility(View.GONE);
-
-        /*new Thread(new Runnable() {
-            public void run() {
-                boolean changesFound = false;
-
-                ListView fileList = (ListView) findViewById(R.id.file_history);
-                for (int i=0; i < fileList.getCount(); i++) {
-                    //Separators and other decorations
-                    if (!fileList.getItemAtPosition(i).getClass().equals(File.class))
-                        continue;
-
-                    File file = (File) fileList.getItemAtPosition(i);
-
-                    //TODO: Handle deleted file
-                    //TODO: Predownload file contents?
-                    DriveResource.MetadataResult metaResult = file.driveId.asDriveFile().getMetadata(driveService.getApiClient()).await(30, TimeUnit.SECONDS);
-                    if (!metaResult.getStatus().isSuccess()) {
-                        Log.e("DocumentList", "Metadata update failed: " + metaResult.getStatus().getStatusMessage());
-                        continue;
-                    }
-
-                    if (metaResult.getMetadata().isTrashed()) {
-                        fileHelper.DeleteItem(file);
-                        changesFound = true;
-                        continue;
-                    }
-
-                    if (!metaResult.getMetadata().getTitle().equals(file.fileName)) {
-                        file.fileName = metaResult.getMetadata().getTitle();
-                        fileHelper.SaveItem(file);
-                        changesFound = true;
-                        continue;
-                    }
-                }
-
-                if (changesFound) {
-                    Log.i("DocumentList", "Changes were made outside this application, will refresh");
-                    LoadHistory();
-                } else {
-                    Log.d("DocumentList", "No changes found outside application");
-                }
-            }
-        }).start();*/
     }
 
     @Override
@@ -176,7 +151,7 @@ public class DocumentList extends BaseDriveActivity implements
 
     private void LoadHistory() {
         List<File> files = fileHelper.GetItems();
-        ListView fileList = (ListView) findViewById(R.id.file_history);
+        RecyclerView fileList = (RecyclerView) findViewById(R.id.file_history);
         TextView helpText = (TextView) findViewById(R.id.helpText);
 
         if (files.size() == 0) {
@@ -284,45 +259,51 @@ public class DocumentList extends BaseDriveActivity implements
 
     @Override
     public void onFinishEditDialog(File file) {
-        ListView fileList = (ListView) findViewById(R.id.file_history);
-        for (int i=0; i < fileList.getChildCount(); i++) {
-            File _file = (File)fileList.getItemAtPosition(i);
-            if (_file.id == file.id) {
-                TextView fileName = (TextView) fileList.getChildAt(i).findViewById(R.id.list_row_document_name);
-                fileName.setText(file.fileName);
-                fileHelper.SaveItem(file);
-
-                break;
-            }
-        }
+        fileHelper.SaveItem(file);
+        LoadHistory();
 
         MetadataChangeSet changeSet = new MetadataChangeSet.Builder().setTitle(file.fileName).build();
         file.driveId.asDriveFile().updateMetadata(driveService.getApiClient(), changeSet);
     }
 }
 
-class listAdapter extends BaseAdapter {
+class listAdapter extends RecyclerView.Adapter {
 
     private DocumentList context;
     private ArrayList items;
     private FragmentManager fragmentManager;
-    private LayoutInflater inflater = null;
 
     public listAdapter(DocumentList context, ArrayList items, FragmentManager fragmentManager) {
         this.context = context;
         this.items = items;
         this.fragmentManager = fragmentManager;
-        this.inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+    }
+
+    private void remove(int position) {
+        Log.d("DocumentList", "Remove item at: " + position);
+        context.fileHelper.DeleteItem((File) items.get(position));
+        items.remove(position);
+        notifyItemRemoved(position);
+
+        if (items.get(position).getClass() != File.class && items.get(position - 1).getClass() == ListViewSeparator.class) {
+            items.remove(position - 1);
+            notifyItemRemoved(position - 1);
+            if (items.size() == 1) {
+                items.remove(0);
+                notifyItemRemoved(0);
+                TextView helpText = (TextView)context.findViewById(R.id.helpText);
+                helpText.setVisibility(View.VISIBLE);
+            }
+        }
+    }
+
+    public void remove(File file) {
+        remove(items.indexOf(file));
     }
 
     @Override
-    public int getCount() {
+    public int getItemCount() {
         return this.items.size();
-    }
-
-    @Override
-    public Object getItem(int position) {
-        return this.items.get(position);
     }
 
     @Override
@@ -330,117 +311,122 @@ class listAdapter extends BaseAdapter {
         return position;
     }
 
-    @Override
-    public View getView(int position, View view, final ViewGroup parent) {
-        if (items.get(position).getClass() == ListViewFooter.class) {
-            view = inflater.inflate(R.layout.content_document_list_footer, null);
-            return view;
+    public class FooterViewHolder extends RecyclerView.ViewHolder {
+        public FooterViewHolder(View view) {
+            super(view);
         }
+    }
 
-        if (items.get(position).getClass() == ListViewSeparator.class) {
-            view = inflater.inflate(R.layout.content_document_list_category, null);
-            TextView header = (TextView) view.findViewById(R.id.list_row_document_category);
-            ListViewSeparator separator = (ListViewSeparator) items.get(position);
-            header.setText(separator.title);
-            return view;
+    public class CategoryViewHolder extends RecyclerView.ViewHolder {
+        public TextView header;
+
+        public CategoryViewHolder(View view) {
+            super(view);
+            header = (TextView) view.findViewById(R.id.list_row_document_category);
         }
+    }
 
-        final File file = (File)items.get(position);
-        view = inflater.inflate(R.layout.content_document_list_row, null);
-        //Load view
+    public class ViewHolder extends RecyclerView.ViewHolder {
+        public TextView fileName;
+        public TextView lastUsed;
+        public File file;
 
-        final TextView fileName = (TextView) view.findViewById(R.id.list_row_document_name);
-        fileName.setText(file.fileName);
-        TextView lastUsed = (TextView) view.findViewById(R.id.list_row_last_used);
-        if (file.dateViewed != null)
-            lastUsed.append(DateUtils.getRelativeTimeSpanString(context, file.dateViewed.getTime(), false));
+        public ViewHolder(View view) {
+            super(view);
+            fileName = (TextView) view.findViewById(R.id.list_row_document_name);
+            lastUsed = (TextView) view.findViewById(R.id.list_row_last_used);
 
-        if (getCount() == position + 1) {
-            float pad = 100 * context.getResources().getDisplayMetrics().density;
-            view.setPadding(0, 0, 0, (int)pad);
-        }
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Log.d("Opening file with id", Long.toString(file.id));
 
-        //On row click
-        view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d("Opening file with id", Long.toString(file.id));
-
-                Intent intent = new Intent(context, TextEditor.class);
-                intent.putExtra(TextEditor.INTENT_FILE_ID, file.id);
-                context.startActivity(intent);
-            }
-        });
-
-        //On context button click
-        Button button = (Button) view.findViewById(R.id.list_row_button);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final PopupMenu popupMenu = new PopupMenu(context, v);
-                String[] menuItems = new String[]{"Rename", /*"Details",*/ "Remove from History", "Delete"};
-                for (String menuItem : menuItems) {
-                    popupMenu.getMenu().add(menuItem);
+                    Intent intent = new Intent(v.getContext(), TextEditor.class);
+                    intent.putExtra(TextEditor.INTENT_FILE_ID, file.id);
+                    v.getContext().startActivity(intent);
                 }
-                popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                    public boolean onMenuItemClick(MenuItem item) {
-                        switch (item.toString()) {
-                            case "Rename":
-                                FileRenameFragment alertDialog = FileRenameFragment.newInstance(file);
-                                alertDialog.show(fragmentManager, "fragment_alert");
-                                return true;
-                            //case "Details":
-                            //    return true;
-                            case "Remove from History":
-                                context.fileHelper.DeleteItem(file);
-                                items.remove(file);
-                                notifyDataSetChanged();
+            });
 
-                                /*new AlertDialog.Builder(context)
-                                        .setIcon(android.R.drawable.ic_dialog_alert)
-                                        .setTitle("Remove from History?")
-                                        .setMessage("File will not be deleted")
-                                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                context.fileHelper.DeleteItem(file);
-                                                items.remove(file);
-                                                notifyDataSetChanged();
-                                            }
-
-                                        })
-                                        .setNegativeButton("Cancel", null)
-                                        .show();*/
-                                return true;
-                            case "Delete":
-                                new AlertDialog.Builder(context)
-                                        .setIcon(android.R.drawable.ic_dialog_alert)
-                                        .setTitle("Delete?")
-                                        .setMessage("File will be moved to trash")
-                                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                context.fileHelper.DeleteItem(file);
-                                                items.remove(file);
-                                                notifyDataSetChanged();
-
-                                                file.driveId.asDriveFile().trash(context.driveService.getApiClient());
-                                            }
-
-                                        })
-                                        .setNegativeButton("Cancel", null)
-                                        .show();
-                                return true;
-                        }
-                        return false;
+            Button button = (Button) view.findViewById(R.id.list_row_button);
+            button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    final PopupMenu popupMenu = new PopupMenu(v.getContext(), v);
+                    String[] menuItems = new String[]{"Rename", "Delete"};
+                    for (String menuItem : menuItems) {
+                        popupMenu.getMenu().add(menuItem);
                     }
-                });
+                    popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                        public boolean onMenuItemClick(MenuItem item) {
+                            switch (item.toString()) {
+                                case "Rename":
+                                    FileRenameFragment alertDialog = FileRenameFragment.newInstance(file);
+                                    alertDialog.show(fragmentManager, "fragment_alert");
+                                    return true;
+                                case "Delete":
+                                    new AlertDialog.Builder(context)
+                                            .setIcon(android.R.drawable.ic_dialog_alert)
+                                            .setTitle("Delete?")
+                                            .setMessage("File will be moved to trash")
+                                            .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int which) {
+                                                    remove(file);
+                                                    file.driveId.asDriveFile().trash(context.driveService.getApiClient());
+                                                }
 
-                popupMenu.show();
-            }
-        });
+                                            })
+                                            .setNegativeButton("Cancel", null)
+                                            .show();
+                                    return true;
+                            }
+                            return false;
+                        }
+                    });
 
-        return view;
+                    popupMenu.show();
+                }
+            });
+        }
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if (items.get(position).getClass() == ListViewFooter.class)
+            return 2;
+        if (items.get(position).getClass() == ListViewSeparator.class)
+            return 1;
+        return 0;
+    }
+
+    @Override
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        if (viewType == 2)
+            return new FooterViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.content_document_list_footer, parent, false));
+        if (viewType == 1)
+            return new CategoryViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.content_document_list_category, parent, false));
+        return new ViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.content_document_list_row, parent, false));
+    }
+
+    @Override
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        if (getItemViewType(position) == 2) {
+            return;
+        }
+
+        if (getItemViewType(position) == 1) {
+            CategoryViewHolder viewHolder = (CategoryViewHolder)holder;
+            ListViewSeparator separator = (ListViewSeparator) items.get(position);
+            viewHolder.header.setText(separator.title);
+            return;
+        }
+
+        ViewHolder viewHolder = (ViewHolder)holder;
+        viewHolder.file = (File)items.get(position);
+
+        viewHolder.fileName.setText(viewHolder.file.fileName);
+        if (viewHolder.file.dateViewed != null)
+            viewHolder.lastUsed.setText("Opened by me: " + DateUtils.getRelativeTimeSpanString(context, viewHolder.file.dateViewed.getTime(), false));
     }
 }
 

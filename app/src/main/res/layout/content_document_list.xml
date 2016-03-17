@@ -10,10 +10,10 @@
     tools:context=".DocumentList"
     android:background="#c8c8c8">
 
-    <ListView
+    <android.support.v7.widget.RecyclerView
         android:layout_width="650dp"
         android:layout_centerHorizontal="true"
-        android:layout_height="wrap_content"
+        android:layout_height="fill_parent"
         android:id="@+id/file_history"/>
 
     <ProgressBar
