@@ -1,12 +1,12 @@
 package rkr.notepad.drive;
 
 import android.app.AlertDialog;
+import android.app.FragmentManager;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.app.FragmentManager;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -19,9 +19,12 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.drive.DriveApi;
+import com.google.android.gms.drive.DriveFile;
 import com.google.android.gms.drive.DriveId;
 import com.google.android.gms.drive.DriveResource;
 import com.google.android.gms.drive.Metadata;
+import com.google.android.gms.drive.MetadataChangeSet;
 
 import java.util.Date;
 
@@ -51,7 +54,7 @@ public class TextEditor extends BaseDriveActivity implements
         toolbar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragmentManager fm = getSupportFragmentManager();
+                FragmentManager fm = getFragmentManager();
                 FileRenameFragment alertDialog = FileRenameFragment.newInstance(mFile);
                 alertDialog.show(fm, "fragment_alert");
             }
@@ -159,7 +162,7 @@ public class TextEditor extends BaseDriveActivity implements
                 finish();
                 return true;
             case R.id.rename:
-                FragmentManager fm = getSupportFragmentManager();
+                FragmentManager fm = getFragmentManager();
                 FileRenameFragment alertDialog = FileRenameFragment.newInstance(mFile);
                 alertDialog.show(fm, "fragment_alert");
                 return true;
@@ -200,6 +203,19 @@ public class TextEditor extends BaseDriveActivity implements
                 else{
                     File file = SaveDriveFileToDB(driveId, metadataResult.getMetadata());
                     OpenFile(file);
+
+                    if (!metadataResult.getMetadata().isPinned()) {
+                        driveId.asDriveFile().open(driveService.getApiClient(), DriveFile.MODE_WRITE_ONLY, null).setResultCallback(new ResultCallback<DriveApi.DriveContentsResult>() {
+                            @Override
+                            public void onResult(DriveApi.DriveContentsResult driveContentsResult) {
+                                MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
+                                        .setPinned(true)
+                                        .build();
+
+                                driveContentsResult.getDriveContents().commit(driveService.getApiClient(), changeSet);
+                            }
+                        });
+                    }
                 }
             }
         });

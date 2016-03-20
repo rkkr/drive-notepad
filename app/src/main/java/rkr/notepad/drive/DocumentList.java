@@ -1,13 +1,12 @@
 package rkr.notepad.drive;
 
+import android.app.FragmentManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
@@ -26,7 +25,10 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.drive.Drive;
+import com.google.android.gms.drive.DriveApi;
+import com.google.android.gms.drive.DriveFile;
 import com.google.android.gms.drive.DriveId;
 import com.google.android.gms.drive.MetadataChangeSet;
 import com.google.android.gms.drive.OpenFileActivityBuilder;
@@ -80,6 +82,19 @@ public class DocumentList extends BaseDriveActivity implements
                 listAdapter.ViewHolder view = (listAdapter.ViewHolder) viewHolder;
 
                 ((listAdapter)fileList.getAdapter()).remove(view.file);
+
+                if (view.file.driveId != null) {
+                    view.file.driveId.asDriveFile().open(driveService.getApiClient(), DriveFile.MODE_WRITE_ONLY, null).setResultCallback(new ResultCallback<DriveApi.DriveContentsResult>() {
+                        @Override
+                        public void onResult(DriveApi.DriveContentsResult driveContentsResult) {
+                            MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
+                                    .setPinned(false)
+                                    .build();
+
+                            driveContentsResult.getDriveContents().commit(driveService.getApiClient(), changeSet);
+                        }
+                    });
+                }
             }
 
             @Override
@@ -170,7 +185,7 @@ public class DocumentList extends BaseDriveActivity implements
         }
         items.add(new ListViewFooter());
 
-        fileList.setAdapter(new listAdapter(this, items, getSupportFragmentManager()));
+        fileList.setAdapter(new listAdapter(this, items, getFragmentManager()));
         helpText.setVisibility(View.GONE);
     }
 
@@ -341,6 +356,11 @@ class listAdapter extends RecyclerView.Adapter {
                 public void onClick(View v) {
                     Log.d("Opening file with id", Long.toString(file.id));
 
+                    if (file.driveId == null) {
+                        Toast.makeText(context, "File not saved to Drive", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
                     Intent intent = new Intent(v.getContext(), TextEditor.class);
                     intent.putExtra(TextEditor.INTENT_FILE_ID, file.id);
                     v.getContext().startActivity(intent);
@@ -372,7 +392,8 @@ class listAdapter extends RecyclerView.Adapter {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
                                                     remove(file);
-                                                    file.driveId.asDriveFile().trash(context.driveService.getApiClient());
+                                                    if (file.driveId != null)
+                                                        file.driveId.asDriveFile().trash(context.driveService.getApiClient());
                                                 }
 
                                             })
