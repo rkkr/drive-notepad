@@ -19,12 +19,9 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.drive.DriveApi;
-import com.google.android.gms.drive.DriveFile;
 import com.google.android.gms.drive.DriveId;
 import com.google.android.gms.drive.DriveResource;
 import com.google.android.gms.drive.Metadata;
-import com.google.android.gms.drive.MetadataChangeSet;
 
 import java.util.Date;
 
@@ -203,19 +200,6 @@ public class TextEditor extends BaseDriveActivity implements
                 else{
                     File file = SaveDriveFileToDB(driveId, metadataResult.getMetadata());
                     OpenFile(file);
-
-                    if (!metadataResult.getMetadata().isPinned()) {
-                        driveId.asDriveFile().open(driveService.getApiClient(), DriveFile.MODE_WRITE_ONLY, null).setResultCallback(new ResultCallback<DriveApi.DriveContentsResult>() {
-                            @Override
-                            public void onResult(DriveApi.DriveContentsResult driveContentsResult) {
-                                MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
-                                        .setPinned(true)
-                                        .build();
-
-                                driveContentsResult.getDriveContents().commit(driveService.getApiClient(), changeSet);
-                            }
-                        });
-                    }
                 }
             }
         });

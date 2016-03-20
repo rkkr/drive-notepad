@@ -1,7 +1,6 @@
 package rkr.notepad.drive;
 
 import android.app.FragmentManager;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
@@ -25,10 +24,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.drive.Drive;
-import com.google.android.gms.drive.DriveApi;
-import com.google.android.gms.drive.DriveFile;
 import com.google.android.gms.drive.DriveId;
 import com.google.android.gms.drive.MetadataChangeSet;
 import com.google.android.gms.drive.OpenFileActivityBuilder;
@@ -84,16 +80,11 @@ public class DocumentList extends BaseDriveActivity implements
                 ((listAdapter)fileList.getAdapter()).remove(view.file);
 
                 if (view.file.driveId != null) {
-                    view.file.driveId.asDriveFile().open(driveService.getApiClient(), DriveFile.MODE_WRITE_ONLY, null).setResultCallback(new ResultCallback<DriveApi.DriveContentsResult>() {
-                        @Override
-                        public void onResult(DriveApi.DriveContentsResult driveContentsResult) {
-                            MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
-                                    .setPinned(false)
-                                    .build();
+                    MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
+                            .setPinned(false)
+                            .build();
 
-                            driveContentsResult.getDriveContents().commit(driveService.getApiClient(), changeSet);
-                        }
-                    });
+                    view.file.driveId.asDriveFile().updateMetadata(driveService.getApiClient(), changeSet);
                 }
             }
 
