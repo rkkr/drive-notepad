@@ -1,49 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="horizontal"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="#ffffff">
+    android:layout_height="wrap_content">
 
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:orientation="vertical"
-        android:layout_width="0dp"
-        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:layout_width="650dp"
         android:layout_height="wrap_content"
         android:background="#ffffff"
-        android:padding="5dp">
+        android:layout_centerHorizontal="true"
+        android:baselineAligned="false">
 
-        <TextView xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/list_row_document_name"
-            android:layout_width="match_parent"
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:orientation="vertical"
+            android:layout_width="0dp"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
+            android:background="#ffffff"
+            android:padding="5dp">
+
+            <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+                android:id="@+id/list_row_document_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:textSize="20sp"
+                android:text="Untitled Document"
+                android:padding="5dp"
+                android:textStyle="bold" />
+
+            <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+                android:id="@+id/list_row_last_used"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:text="Opened by me: "
+                android:padding="5dp"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+
+        <Button
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center_vertical"
+            android:text="&#8942;"
+            android:id="@+id/list_row_button"
+            android:textStyle="bold"
             android:textSize="20sp"
-            android:text="Untitled Document"
-            android:padding="5dp"
-            android:textStyle="bold" />
-
-        <TextView xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/list_row_last_used"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:text="Opened by me: "
-            android:padding="5dp"
-            android:textSize="12sp" />
+            android:background="@android:color/transparent"
+            android:textColor="@android:color/darker_gray" />
 
     </LinearLayout>
-
-    <Button
-        style="?android:attr/borderlessButtonStyle"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_gravity="center_vertical"
-        android:text="&#8942;"
-        android:id="@+id/list_row_button"
-        android:textStyle="bold"
-        android:textSize="20sp"
-        android:background="@android:color/transparent"
-        android:textColor="@android:color/darker_gray" />
-
-</LinearLayout>
+</RelativeLayout>

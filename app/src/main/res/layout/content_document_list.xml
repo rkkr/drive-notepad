@@ -11,8 +11,7 @@
     android:background="#c8c8c8">
 
     <android.support.v7.widget.RecyclerView
-        android:layout_width="650dp"
-        android:layout_centerHorizontal="true"
+        android:layout_width="match_parent"
         android:layout_height="fill_parent"
         android:id="@+id/file_history"/>
 
