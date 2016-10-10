@@ -1,7 +1,9 @@
 package rkr.notepad.drive;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -9,15 +11,14 @@ import java.io.OutputStreamWriter;
 
 public class Utils {
     public static String readFromInputStream(InputStream is)  {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        StringBuilder builder = new StringBuilder();
+        BufferedInputStream bis = new BufferedInputStream(is);
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
         int c;
         try {
-            while ((c = reader.read()) != -1) {
-                builder.append((char)c);
+            while ((c = bis.read()) != -1) {
+                buf.write((byte) c);
             }
-            reader.close();
-            return builder.toString();
+            return buf.toString("UTF-8");
         }
         catch (java.io.IOException e) {
             return null;
