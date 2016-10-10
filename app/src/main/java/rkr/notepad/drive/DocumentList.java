@@ -348,8 +348,13 @@ class listAdapter extends RecyclerView.Adapter {
                     Log.d("Opening file with id", Long.toString(file.id));
 
                     if (file.driveId == null) {
-                        Toast.makeText(context, "File not saved to Drive", Toast.LENGTH_LONG).show();
-                        return;
+                        Log.d("DocumentList", "Tried to open file that is not yet saved");
+                        file = context.fileHelper.GetNewFile(file);
+
+                        if (file.driveId == null) {
+                            Toast.makeText(context, "File not yet saved to Drive", Toast.LENGTH_LONG).show();
+                            return;
+                        }
                     }
 
                     Intent intent = new Intent(v.getContext(), TextEditor.class);
@@ -369,6 +374,16 @@ class listAdapter extends RecyclerView.Adapter {
                     }
                     popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                         public boolean onMenuItemClick(MenuItem item) {
+                            if (file.driveId == null) {
+                                Log.d("DocumentList", "Tried to open file that is not yet saved");
+                                file = context.fileHelper.GetNewFile(file);
+
+                                if (file.driveId == null) {
+                                    Toast.makeText(context, "File not yet saved to Drive", Toast.LENGTH_LONG).show();
+                                    return false;
+                                }
+                            }
+
                             switch (item.toString()) {
                                 case "Rename":
                                     FileRenameFragment alertDialog = FileRenameFragment.newInstance(file);
@@ -383,8 +398,7 @@ class listAdapter extends RecyclerView.Adapter {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
                                                     remove(file);
-                                                    if (file.driveId != null)
-                                                        file.driveId.asDriveFile().trash(context.driveService.getApiClient());
+                                                    file.driveId.asDriveFile().trash(context.driveService.getApiClient());
                                                 }
 
                                             })

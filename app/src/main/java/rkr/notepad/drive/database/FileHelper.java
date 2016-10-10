@@ -68,7 +68,29 @@ public class FileHelper {
             else
                 return null;
         }
+    }
 
+    public File GetNewFile(File file) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        Cursor cursor = db.query(
+                DBContracts.FileEntry.TABLE_NAME,
+                null,
+                DBContracts.FileEntry.COLUMN_NAME_ID + " = ?",
+                new String[]{Long.toString(file.id)},
+                null,
+                null,
+                null
+        );
+
+        if (cursor.getCount() != 1)
+            return null;
+
+        cursor.moveToFirst();
+        file = CursorToFile(cursor);
+        cursor.close();
+
+        return file;
     }
 
     public File GetItem(DriveId driveId) {
