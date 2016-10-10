@@ -3,7 +3,6 @@
     package="rkr.notepad.drive">
 
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <!--
     Icon based on:
@@ -33,18 +32,6 @@
         <service
             android:name=".DriveService"
             android:exported="false"/>
-        <activity
-            android:name=".DriveIntegration"
-            android:icon="@mipmap/ic_launcher"
-            android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <action android:name="android.intent.action.EDIT"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="text/*"/>
-            </intent-filter>
-        </activity>
     </application>
 
 </manifest>
