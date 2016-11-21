@@ -130,6 +130,9 @@ public class DocumentList extends BaseDriveActivity implements
     }
 
     private String GetCategory(Date date) {
+        if (date == null)
+            return "Never";
+
         Calendar cal = Calendar.getInstance();
 
         cal.set(Calendar.HOUR_OF_DAY, 0);
@@ -198,7 +201,7 @@ public class DocumentList extends BaseDriveActivity implements
             }
 
             IntentSender intent = Drive.DriveApi.newOpenFileActivityBuilder()
-                    .setMimeType(new String[]{
+                    /*.setMimeType(new String[]{
                             "text/html",
                             "text/x-asm",
                             "text/asp",
@@ -249,7 +252,7 @@ public class DocumentList extends BaseDriveActivity implements
                             "text/vnd.wap.wmlscript",
                             "text/scriplet",
                             "text/xml",
-                    })
+                    })*/
                     .build(driveService.getApiClient());
 
             try {
