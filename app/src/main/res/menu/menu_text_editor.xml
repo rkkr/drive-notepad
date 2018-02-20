@@ -4,6 +4,6 @@
     tools:context=".DocumentList">
     <item android:id="@+id/rename"
         android:title="Rename"
-        android:orderInCategory="2"
+        android:orderInCategory="1"
         app:showAsAction="never"/>
 </menu>

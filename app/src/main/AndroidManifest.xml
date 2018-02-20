@@ -2,8 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="rkr.notepad.drive">
 
-    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
-
     <!--
     Icon based on:
         Vicent Pla https://www.iconfinder.com/icons/204794/myphoneexplorer_notes_icon

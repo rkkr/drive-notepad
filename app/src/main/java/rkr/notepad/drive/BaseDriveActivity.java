@@ -78,6 +78,8 @@ public abstract class BaseDriveActivity extends AppCompatActivity implements
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_CODE_RESOLUTION && resultCode == RESULT_OK) {
             driveService.getApiClient().connect();
+        } else {
+            finish();
         }
     }
 

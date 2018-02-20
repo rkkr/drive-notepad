@@ -1,7 +1,5 @@
 package rkr.notepad.drive;
 
-import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
@@ -27,7 +25,6 @@ public class DriveService extends Service {
 
     private final IBinder mBinder = new MyBinder();
     private GoogleApiClient googleApiClient;
-    private String mAccountName;
     private static final String TAG = "DriveService";
     private boolean activeOperations = false;
 
@@ -39,20 +36,10 @@ public class DriveService extends Service {
         if (googleApiClient != null)
             return;
 
-        GetAccountName();
-
-        if (mAccountName != null) {
-            googleApiClient = new GoogleApiClient.Builder(this)
-                    .addApi(Drive.API)
-                    .addScope(Drive.SCOPE_FILE)
-                    .setAccountName(mAccountName)
-                    .build();
-        } else {
-            googleApiClient = new GoogleApiClient.Builder(this)
-                    .addApi(Drive.API)
-                    .addScope(Drive.SCOPE_FILE)
-                    .build();
-        }
+        googleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(Drive.API)
+                .addScope(Drive.SCOPE_FILE)
+                .build();
 
         Log.d(TAG, "Service is created");
     }
@@ -103,25 +90,9 @@ public class DriveService extends Service {
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "Service is stoped");
+        Log.d(TAG, "Service is stopped");
         googleApiClient.disconnect();
         super.onDestroy();
-    }
-
-    private void GetAccountName() {
-        if (mAccountName != null)
-            return;
-
-        Account[] accounts = AccountManager.get(this).getAccountsByType("com.google");
-        if (accounts.length == 0) {
-            Log.d(TAG, "Must have a Google account installed");
-            return;
-        }
-        if (accounts.length > 1) {
-            Log.d(TAG, "Multiple accounts found");
-            return;
-        }
-        mAccountName = accounts[0].name;
     }
 
     class MyBinder extends Binder {
