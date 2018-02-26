@@ -78,9 +78,9 @@ public class TextEditor extends BaseDriveActivity implements
         }
 
         //New file is being created
-        getSupportActionBar().setTitle("Untitled document");
+        getSupportActionBar().setTitle("Untitled document.txt");
         mFile = new File();
-        mFile.fileName = "Untitled document";
+        mFile.fileName = "Untitled document.txt";
 
         RegisterEditWatcher();
     }
